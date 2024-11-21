@@ -5,11 +5,17 @@
 -- script:  lua
 scroll_y = 0
 
+local saveData = {}
+local saveEntities_ = {}
 player = {
-    x = 135,
-    y = 0,
+    x = 138,
+    y = 115,
     speedX = .05,
-    vx = 0
+    vx = 0,
+    vy = 0,
+    road_vy = -0.15,
+    road_pos = 0,
+    distance = 0
 }
 
 settings = {
@@ -19,6 +25,113 @@ settings = {
     music = true,
     sound = true
 }
+
+function overlap(x_min1, x_max1, x_min2, x_max2)
+    return x_max1 >= x_min2 and x_max2 >= x_min1
+end
+
+Entity = {
+    x = 0,
+    y = 0,
+    ox = 0,
+    oy = 0,
+    w = 8,
+    h = 8,
+    sprh = 8,
+    alive = true,
+    active = true,
+    stage = nil
+}
+
+function Entity:new(o)
+    o = o or {}
+    return setmetatable(o, {
+        __index = self
+    })
+end
+
+function Entity:overlap(e)
+    local e1_x = self.x + self.ox
+    local e1_y = self.y + self.oy
+    local e2_x = e.x + e.ox
+    local e2_y = e.y + e.oy
+    return overlap(e1_x, e1_x + self.w, e2_x, e2_x + e.w) and overlap(e1_y, e1_y + self.h, e2_y, e2_y + e.h)
+end
+
+function Entity:draw()
+end
+function Entity:update(dt)
+end
+
+Car = Entity:new{
+    type = "enemy",
+    pos = 0,
+    ox = 2,
+    oy = 2,
+    w = 14,
+    h = 13,
+    sprh = 24,
+    spr = 5,
+    direction = 0
+}
+
+function Car:draw()
+    spr(self.spr, self.x, self.y, 0, 1, self.direction, 0, 2, 2)
+    --rectb(self.x + self.ox, self.y + self.oy, self.w, self.h, 12)
+end
+
+function Car:update(dt)
+    self.y = self.y - (self.stage.road_vy * dt) / 2
+    self.pos = self.stage.road_pos
+end
+
+Player = Entity:new{
+    type = "player",
+    x = 138,
+    y = 115,
+    vx = 0,
+    vy = 0,
+    ox = 1,
+    oy = 2,
+    w = 13,
+    h = 13,
+    speedX = .05,
+    road_vy = -0.15,
+    road_pos = 0,
+    distance = 0
+}
+
+function Player:draw()
+    spr(0, self.x, self.y, 0, 1, 0, 0, 2, 2)
+    rectb(self.x + self.ox, self.y + self.oy, self.w, self.h, 12)
+end
+
+function Player:update(dt)
+    if btn(2) then -- left
+        if self.vx >= -1 then
+            self.vx = self.vx - self.speedX
+        end
+    elseif btn(3) then -- right
+        if self.vx <= 1 then
+            self.vx = self.vx + self.speedX
+        end
+    else -- stop
+        if self.vx > 0 then
+            self.vx = self.vx - .05
+            if self.vx < 0 then
+                self.vx = 0
+            end
+        elseif self.vx < 0 then
+            self.vx = self.vx + .05
+            if self.vx > 0 then
+                self.vx = 0
+            end
+        end
+    end
+
+    self.x = self.x + self.vx
+    self:cartsLimits()
+end
 
 Stage = {}
 
@@ -104,18 +217,18 @@ function cartMoves()
     player.x = player.x + player.vx
 end
 
-function cartsLimits()
-    if player.y < 0 then
-        player.y = 0
+function Player:cartsLimits()
+    if self.y < 0 then
+        self.y = 0
     end
-    if player.y > 120 then
-        player.y = 120
+    if self.y > 120 then
+        self.y = 120
     end
-    if player.x < 31 then
-        player.x = 31
+    if self.x < 31 then
+        self.x = 31
     end
-    if player.x > 194 then
-        player.x = 194
+    if self.x > 194 then
+        self.x = 194
     end
 end
 
@@ -160,6 +273,8 @@ function StageManager()
                 music(1)
             elseif name == "game" then
                 music(0)
+            elseif name == "pause" then
+                music(1)
             end
         end,
         update = function(dt)
@@ -197,26 +312,124 @@ function Menu:update(dt)
     end
 end
 
-Game = Stage:new()
+Game = Stage:new{
+    entities = nil,
+    entity_count = 0,
+    distance = 0,
+    player = nil,
+    road_vy = .15,
+    road_pos = 0,
+    last_obstacle = 0,
+    next_obstacle = 100,
+    state = "game",
+    car = false,
+    poli = false,
+    tanke = false,
+    explosion = false
+}
 
 function Game:init()
-    player.x = 138
-    player.y = 115
-    player.vx = 0
-    player.vy = 0
-    self.road_vy = -.15
-    self.road_pos = 0
+    self.player = Player:new{
+        x = player.x,
+        y = player.y,
+        vx = player.vx,
+        vy = player.vy,
+        speedX = player.speedX
+    }
+    self.entities = saveEntities_
+    self.entity_count = 0
+    self:add_entity(self.player)
+    self.road_vy = player.road_vy
+    self.road_pos = player.road_pos
+    self.distance = player.distance
+end
+
+function Game:add_entity(entity)
+    table.insert(self.entities, entity)
+    self.entity_count = self.entity_count + 1
 end
 
 function Game:update(dt)
     cls()
+    local sound_playing = false
+    local sound_timer = 0
+    if sm.state == "pause" then
+        self:drawPauseMenu()
+        return
+    end
+
     self:draw_road()
+    self:draw_entities()
+
+    if self.state == "game over" then
+        print("GAME OVER", 64, 73, 0, false, 2)
+    else
+        self:update_entities(dt)
+    end
+
     self:update_road(dt)
     -- map(0, scroll_y // 8, 30, 17, 0, (scroll_y % 8) - 8)
     -- map(0, (scroll_y // 8) + 1, 30, 17, 0, (scroll_y % 8) + 8)
-    spr(0, player.x, player.y, 0, 1, 0, 0, 2, 2)
-    cartMoves()
-    cartsLimits()
+    for i, e in pairs(self.entities) do
+        if self.player:overlap(e) then
+            if e.type == "enemy" then
+                self.state = "game over"
+                if self.explosion == false or sound_playing then
+                    sfx(8, "F-3", -1, 2, 15, 8)
+                    sound_playing = true 
+                    sound_timer = 120
+                    self.explosion = true
+                end
+                if sound_playing then
+                    sound_timer = sound_timer - 1
+                    if sound_timer <= 0 then
+                        sound_playing = false
+                    end
+                end
+                spr(33, self.player.x, self.player.y, 0, 1, -1, 0, 2, 2)
+                spr(33, e.x, e.y, 0, 1, 0, 0, 2, 2)
+            end
+        end
+    end
+
+    if self.state == "game over" then
+        if btn(4) or btn(5) then
+            saveEntities_ = {}
+            sm.switch("menu")
+        end
+    end
+end
+
+function Game:draw_entities()
+    table.sort(self.entities, function(e1, e2)
+        return (e1.y + e1.sprh) < (e2.y + e2.sprh)
+    end)
+    for i = 1, #self.entities do
+        local e = self.entities[i]
+        e:draw()
+        if settings.bb then
+            rectb(e.x + e.ox, e.y + e.oy, e.w, e.h, 0)
+        end
+    end
+end
+
+function Game:update_entities(dt)
+    local entities_ = {}
+    local entity_count_ = 0
+    for i = 1, #self.entities do
+        local e = self.entities[i]
+        e:update(dt)
+        if e.alive and e.y < 220 then
+            table.insert(entities_, e)
+            entity_count_ = entity_count_ + 1
+        else
+            if e.name == 'car' then
+                self.car = false
+            end
+        end
+    end
+    self.entity_count = entity_count_
+    self.entities = entities_
 end
 
 function Game:draw_road()
@@ -232,9 +445,18 @@ function Game:draw_road()
         map(0, 0, 30, 17, 0, -(tmp - 120))
         map(30, 0, 30, 17, 0, -(tmp - 240))
     end
+    print("actual", 8, 18, 3)
+    print(string.format("%06.f m", self.distance), 8, 26, 9, true)
+    print("high", 8, 2, 3)
+    print(string.format("%06.f m", settings.high_score), 8, 10, 9, true)
+
+    if key(50) then
+        self:pauseGame()
+    end
 end
 
 function Game:update_road(dt)
+
     if self.state == "game" then
         self.road_vy = self.road_vy - 0.000001 * dt
     end
@@ -244,17 +466,126 @@ function Game:update_road(dt)
     end
 
     if self.state == "game" then
-        self.distance = 0.1406 * self.road_pos
+
+        self.distance = -0.1406 * self.road_pos
 
         if self.distance > settings.high_score then
             settings.high_score = self.distance
         end
+
+        if -self.road_pos > self.last_obstacle then
+            local p = {42, 64, 86}
+            local i = math.random(1, #p)
+
+            if self.distance > 20 and self.car == false then
+                table.insert(self.entities, Car:new{
+                    pos = -1 * self.road_pos,
+                    x = p[i] + math.random(1, 5) - 2,
+                    y = 0,
+                    stage = self,
+                    spr = 5,
+                    name = "car",
+                    direction = -1
+                })
+                self.entity_count = self.entity_count + 1
+                self.car = true
+            end
+
+            self.last_obstacle = -1 * self.road_pos + self.next_obstacle
+        end
     end
+end
+
+function Game:pauseGame()
+    saveData = {
+        player_x = self.player.x,
+        player_y = self.player.y,
+        player_vx = self.player.vx,
+        player_vy = self.player.vy,
+        road_vy = self.road_vy,
+        road_pos = self.road_pos,
+        distance = self.distance
+    }
+    saveEntities_ = self.entities
+    sm.switch("pause")
+end
+
+Pause = Stage:new{
+    p = nil
+}
+
+function Pause:init()
+    self.p = Positioner(3)
+end
+
+function Pause:update(dt)
+    cls(0)
+    map(180, 119, 30, 17)
+    local y = 54
+    print("Continue", 90, y)
+    print("Restart", 90, y + 10)
+    print("Quit", 90, y + 20)
+    spr(98, 80, (self.p.pos() - 1) * 10 + y - 2)
+
+    if btnp(0) then
+        self.p.sub()
+    elseif btnp(1) then
+        self.p.add()
+    elseif btnp(4) or btnp(5) then
+        if self.p.pos() == 1 then
+            self:resumeGame()
+        elseif self.p.pos() == 2 then
+            self:restartGame()
+        elseif self.p.pos() == 3 then
+            self:quitGame()
+        end
+    end
+end
+
+function Pause:resumeGame()
+    if saveData then
+        player.x = saveData.player_x
+        player.y = saveData.player_y
+        player.vx = saveData.player_vx
+        player.vy = saveData.player_vy
+        player.road_vy = saveData.road_vy
+        player.road_pos = saveData.road_pos
+        player.distance = saveData.distance
+    end
+    sm.switch("game")
+end
+
+function Pause:restartGame()
+    if saveData then
+        player.x = 138
+        player.y = 115
+        player.vx = 0
+        player.vy = 0
+        player.road_vy = -0.15
+        player.road_pos = 0
+        player.distance = 0
+    end
+    saveEntities_ = {}
+    sm.switch("game")
+end
+
+function Pause:quitGame()
+    if saveData then
+        player.x = 138
+        player.y = 115
+        player.vx = 0
+        player.vy = 0
+        player.road_vy = -0.15
+        player.road_pos = 0
+        player.distance = 0
+    end
+    sm.switch("menu")
 end
 
 sm = StageManager()
 sm.add("menu", Menu)
 sm.add("game", Game)
+sm.add("pause", Pause)
 sm.switch("menu")
 
 last_t = time()
@@ -273,214 +604,54 @@ function TIC()
 end
 
 -- <TILES>
--- 000:000000000000057700077777007fc777077e57770e576777077777550767fddd
--- 001:000000007750000077777000777cf7007775e770777675e055777770dddf7670
--- 002:0000000000000dcc000ccccc00cf1ccc0ccedccc0edcbccc0cccccdd0cbcfddd
--- 003:00000000ccd00000ccccc000ccc1fc00cccdecc0cccbcde0ddccccc0dddfcbc0
--- 004:000000000000e41100043444004623330224333304e33133f2d33333e3431333
--- 005:00000000114e000044434000333264003333422033133e4033333d2f3331343e
--- 006:000000000000ebcc000bcbbb00b6fccc0ffbcccc0becceccffdcccccecbcbccc
--- 007:00000000ccbe0000bbbcb000cccf6b00ccccbff0ccecceb0cccccdffcccbcbce
--- 008:00000eee000e43330e433433e663433326643333233233332343333323233333
--- 009:eee000003334e000334334e03334366e33334662333323323333343233333232
--- 010:00000eee000ea9990ea99a99e669a999866a99998998999989a9999989899999
--- 011:eee00000999ae00099a99ae0999a966e9999a6689999899899999a9899999898
--- 012:0000000000000000000000000000000000000eee000e43330e433433e6634333
--- 013:00000000000000000000000000000000eee000003334e000334334e03334366e
--- 014:0000000000000000000000000000000000000eee000ea9990ea99a99e669a999
--- 015:00000000000000000000000000000000eee00000999ae00099a99ae0999a966e
--- 016:07fedddd05dedddd0f6eddddf7fedddd07eefddd07f5677707d5777707d57777
--- 017:ddddef70dddded50dddde6f0ddddef7fdddfee7077765f7077775d7077775d70
--- 018:0cfedddd0dbedddd0fbeddddfcfedddd0ceefddd0cfdbccc0cddcccc0cddcccc
--- 019:ddddefc0ddddedd0ddddebf0ddddefcfdddfeec0cccbdfc0ccccddc0ccccddc0
--- 020:e3431111e3434fffe343eddd042edddd03fdeddd13e4eeee04d3441103dd3433
--- 021:1111343efff4343eddde343edddde240dddedf30eeee4e3111443d403343dd30
--- 022:ecbcbbbbecbcbfffecbceddd0bfedddd0cfdedddecebeeee0bdcbbee0cddcbcc
--- 023:bbbbcbcefffbcbcedddecbceddddefb0dddedfc0eeeebeceeebbcdb0ccbcddc0
--- 024:2323333323333333232fffff23ffeeee4eeddddd44eddddd2f4edddd2fe43333
--- 025:3333323233333332fffff232eeeeff32dddddee4ddddde44dddde4f233334ef2
--- 026:8989999989999999898fffff89ffeeeeaeedddddaaeddddd8faedddd8fea9999
--- 027:9999989899999998fffff898eeeeff98dddddeeadddddeaaddddeaf89999aef8
--- 028:26643333233233332323333323333333232fffff23ffeeee4eeddddd44eddddd
--- 029:33334662333323323333323233333332fffff232eeeeff32dddddee4ddddde44
--- 030:866a9999899899998989999989999999898fffff89ffeeeeaeedddddaaeddddd
--- 031:9999a668999989989999989899999998fffff898eeeeff98dddddeeadddddeaa
--- 032:07d7666607d7666607f7755507e77fff0cd67e0e0ce77dee05677e0d05677fdd
--- 033:66667d7066667d7055577f70fff77e70e0e76dc0eed77ec0d0e77650ddf77650
--- 034:0cdcbbbb0cdcbbbb0cfccddd0ceccfff0cdbce0e0ceccdee0dbcce0d0dbccfdd
--- 035:bbbbcdc0bbbbcdc0dddccfc0fffccec0e0ecbdc0eedccec0d0eccbd0ddfccbd0
--- 036:04ed1433042d1433022e3433034d3433013f343301441eee0142feed0411fedd
--- 037:3341de403341d2403343e2203343d4303343f310eee14410deef2410ddef1140
--- 038:0dedebcc0dbdebcc0bbecbcc0cbdcbcc0ecfcbcc0ebbbbee0ebffeed0beefedd
--- 039:ccbedeb0ccbedfb0ccbceff0ccbcdbc0ccbcfce0eebbbbe0deeffbe0ddefeeb0
--- 040:2ff2333322f23333f2f2333323f2333342f2333322f2333323f3434423feeeee
--- 041:33332ff233332f2233332f2f33332f3233332f2433332f2244343f32eeeeef32
--- 042:8ff8999988f89999f8f8999989f89999a8f8999988f8999989f9a9aa89feeeee
--- 043:99998ff899998f8899998f8f99998f9899998f8a99998f88aa9a9f98eeeeef98
--- 044:2f4edddd22f2333323f3333323f3333334f34344343eeeee233edddd23332222
--- 045:dddde4f233332f2233333f3233333f3244343f43eeeee343dddde33222223332
--- 046:8faedddd88f8999989f9999989f999999af9a9aa9a9eeeee899edddd89998888
--- 047:ddddeaf899998f8899999f9899999f98aa9a9fa9eeeee9a9dddde99888889998
--- 048:05677d0c07677ded07577eed07777ddd055770000fdd5fff00fdfeee0000fddd
--- 049:c0d77650ded77670dee77570ddd7777000077550fff5ddf0eeefdf00dddf0000
--- 050:0dbccd0c0cbccded0cdcceed0ccccddd0ddcc0000feebfff00fefeee0000fddd
--- 051:c0dccbd0dedccbc0deeccdc0dddcccc0000ccdd0fffbeef0eeefef00dddf0000
--- 052:e322fedde3224edde3332edde34334ede1234f4302111141003134110000deef
--- 053:ddef223edde4223edde2333ede43343e34f4321e1411112011431300feed0000
--- 054:ecfffeddecffbeddecccfeddecbccbedeefcbfbd0feeeebe00cecbee0000deef
--- 055:ddefffceddebffceddefcccedebccbcedbfbcfeeebeeeef0eebcec00feed0000
--- 056:34fedddd343edddd233feddd23332222e133dfff0212efff002123330000eeee
--- 057:ddddef43dddde343dddef33222223332fffd331efffe212033321200eeee0000
--- 058:9afedddd9a9edddd899feddd89998888e199dfff0818efff008189990000eeee
--- 059:ddddefa9dddde9a9dddef99888889998fffd991efffe818099981800eeee0000
--- 060:e133dfff0212efff002123330000eeee00000000000000000000000000000000
--- 061:fffd331efffe212033321200eeee000000000000000000000000000000000000
--- 062:e199dfff0818efff008189990000eeee00000000000000000000000000000000
--- 063:fffd991efffe818099981800eeee000000000000000000000000000000000000
--- 064:000000000000000d0000000e0000000f000000040000004b0000432d000023de
--- 065:00000000d0000000e0000000f000000040000000b4000000d2340000ed320000
--- 066:0000000000000000000000000000000200000021000000110000044300002344
--- 067:0000000000000000000000002000000012000000110000003440000044320000
--- 068:000000000000666605b576660777666657666666576666665766666657655555
--- 069:000000006666000066675b506666777066666675666666756666667555555675
--- 070:0000000000fe2dbb0eeeeeeebdddbbbbbedbbbcc0ebbbbbb0effffff00bddddd
--- 071:00000000bbd2ef00eeeeeee0bbbbdddbccbbbdebbbbbbbe0ffffffe0dddddb00
--- 072:00000aa800000a880000d8aa0000d8880000d8aa0000da880000d9890000d89c
--- 073:8deeed888feeef888efffe888ddddd88eefffeee8ddddd8899999999bbbbbbbb
--- 074:ee0000008800089de80008aee800089fd88aaaaa8e8988888889899998898999
--- 075:00000008000000090000000800000009aaaaaaa8888888889999999899999998
--- 076:800000009000000080000000900000008aaaaaaa888888888999999989999999
--- 077:000000eed9800088ea80008ef980008eaaaaa88d888898e89998988899989889
--- 078:88deeed888feeef888efffe888ddddd8eeefffee88ddddd899999999bbbbbbbb
--- 079:8aa0000088a00000aa8d0000888d0000aa8d000088ad0000989d0000c98d0000
--- 080:000b1dfe00d4eb1100edfdbded00d2110000e1160000211f0000043500000346
--- 081:efd1b00011be4d00dbdfde00112d00de611e0000f11200005340000064300000
--- 082:00023112bdb4242100d2421b0def212200002122000021220000212200002122
--- 083:2113200012424bdbb1242d002212fed022120000221200002212000022120000
--- 084:8677766685777777856666660566666605666666056666660777777700b8cddd
--- 085:66677768777777586666665866666650666666506666665077777770dddc8b00
--- 086:00dbcccc00dccccc00dbcccc00dbbbbbedddddddeddeeeeefffffffffeeeeeee
--- 087:ccccbd00cccccd00ccccbd00bbbbbd00dddddddeeeeeeddeffffffffeeeeeeef
--- 088:0000de9c0000dd9c0000d89c0000de9c0000de9c0000d89c0000d89c0000de9c
--- 089:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
--- 090:989a8aaa989a8aaa989a8aaa989a8aaa989a8aaa989a8aaa989a8aaa989a8aaa
--- 091:aaaaaaa8aaaaa99daaaaa99daaaaa99daaaaa99daaaaa99daaaaa99daa9e8888
--- 092:8aaaaaaad99aaaaad99aaaaad99aaaaad99aaaaad99aaaaad99aaaaa8888e9aa
--- 093:aaa8a989aaa8a989aaa8a989aaa8a989aaa8a989aaa8a989aaa8a989aaa8a989
--- 094:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
--- 095:c9ed0000c9dd0000c98d0000c9ed0000c9ed0000c98d0000c98d0000c9ed0000
--- 096:0000023600000f2500000fee00000fbe00000fde00001fde00003fde000042de
--- 097:6320000052f00000eef00000ebf00000edf00000edf10000edf30000ed240000
--- 098:000003330000031b000033bb000431bb000411bb00021bbb0001ebbb0001dbbb
--- 099:33300000b1300000bb330000bb134000bb114000bbb12000bbbe1000bbbd1000
--- 100:088cdddd08cdcccc08debbbb088ccccc00cddddd00cddddd00cddddc00cdddcb
--- 101:ddddc880ccccdc80bbbbed80ccccc880dddddc00dddddc00cddddc00bcdddc00
--- 102:fdeeedddfdeeddddfdedddddfdedddddfdedddddfdedddddfdedddddfdeddddd
--- 103:dddeeedfddddeedfdddddedfdddddedfdddddedfdddddedfdddddedfdddddedf
--- 104:0000de9c0000d89c0000de9c0000de9c0000d89c0000de9900888899889aaadb
--- 105:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb99999999888888ddbbbbb9d8
--- 106:98a8aaaa98a899999a9999aaa888aa989a8aa8cb980ecebb9aadbbbb9aadbbbb
--- 107:888a9889898a9999988dbbbbcd8dbbbbbe8dbbbbbe888888be8dbbbbbe8dbbbb
--- 108:9889a8889999a898bbbbd889bbbbd8dcbbbbd8eb888888ebbbbbd8ebbbbbd8eb
--- 109:aaaa8a8999998a89aa9999a989aa888abc8aa8a9bbece089bbbbdaa9bbbbdaa9
--- 110:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb99999999dd8888888d9bbbbb
--- 111:c9ed0000c98d0000c9ed0000c9ed0000c98d000099ed000099888800bdaaa988
--- 112:000003140000021300000023000000d2000000bd0000000b0000000d0000000b
--- 113:4130000031200000320000002d000000db000000b0000000d0000000b0000000
--- 114:0001eddd00012eee000111b400012bdd00012420000b121b0000212300000211
--- 115:ddde1000eee210004b111000ddb2100002421000b121b0003212000011200000
--- 116:00cdddcb00cdddcb00cddddc00cddddd00cddddd00cddddd00cccccc08888888
--- 117:bcdddc00bcdddc00cddddc00dddddc00dddddc00dddddc00cccccc0088888880
--- 118:fdedddddfdedddddfdedddddfdedddddfdedddddfdedddddfdedddddfdeddddd
--- 119:dddddedfdddddedfdddddedfdddddedfdddddedfdddddedfdddddedfdddddedf
--- 120:989aaadb989aaadb989aaadb989aaadb9d9aaadbd89aaadb088888db999889db
--- 121:bbbbba8abbbbbaaabbbbd8aabbbbd8a8bbbbe9aabddd8a9ab9a88a9ab988ca9a
--- 122:899bbbbb99cb999999bbbbbb9cbbbbbb9cbbdddd9cbbd8bbbbbbd8bbbbbbd8bb
--- 123:ca9bbbbb998cccccbbbbbbbbbbbbbbbbddddddddbdddddddb9888888b99bbbbb
--- 124:bbbbb9acccccc899bbbbbbbbbbbbbbbbdddddddddddddddb8888889bbbbbb99b
--- 125:bbbbb9989999bc99bbbbbb99bbbbbbc9ddddbbc9bb8dbbc9bb8dbbbbbb8dbbbb
--- 126:a8abbbbbaaabbbbbaa8dbbbb8a8dbbbbaa9ebbbba9a8dddba9a88a9ba9ac889b
--- 127:bdaaa989bdaaa989bdaaa989bdaaa989bdaaa9d9bdaaa98dbd888880bd988999
--- 132:0888888800cddddd00cddddd00cddddd00cddddd00cddddc00cdddcb00cdddcb
--- 133:88888880dddddc00dddddc00dddddc00dddddc00cddddc00bcdddc00bcdddc00
--- 134:fdedddddfdedddddfdedddddfdedddddfdedddddfdedddddfdedddddfdeddddd
--- 135:dddddedfdddddedfdddddedfdddddedfdddddedfdddddedfdddddedfdddddedf
--- 136:989aaadb989aaadb989aaadb989aaadb999889db0e8888db089999db999aaadb
--- 137:b989ca9ab989ca9ab989ca9ab989ca9ab989ca9ab98aca9ab998ca9abaaaaaaa
--- 138:bbbbd8bbbbbbd8bbbbbbd8bbbbbbd8bbbbbbd8bbbbbbb8aa9cbbbbbbacbbbbbb
--- 139:baabbbbbbaabbbbbbaabbbbbbaabbbbbbaabbbbb98abbbbbb99aaaaab9888888
--- 140:bbbbbaabbbbbbaabbbbbbaabbbbbbaabbbbbbaabbbbbba89aaaaa99b8888889b
--- 141:bb8dbbbbbb8dbbbbbb8dbbbbbb8dbbbbbb8dbbbbaa8bbbbbbbbbbbc9bbbbbbca
--- 142:a9ac989ba9ac989ba9ac989ba9ac989ba9ac989ba9aca89ba9ac899baaaaaaab
--- 143:bdaaa989bdaaa989bdaaa989bdaaa989bd988999bd8888e0bd999980bdaaa999
--- 148:00cdddcb00cddddc00cddddd00cddddd00cddddd00cddddd088bbbbb00ccdddd
--- 149:bcdddc00cddddc00dddddc00dddddc00dddddc00dddddc00bbbbb880ddddcc00
--- 150:fdedddddfdedddddfdedddddfdedddddfdedddddfdedddddfdedddddfdeddddd
--- 151:dddddedfdddddedfdddddedfdddddedfdddddedfdddddedfdddddedfdddddedf
--- 152:989aaadb989aaadb989aaadb989aaadb899aaadb008999da0000ddaa0000deab
--- 153:bbbe8aa8bbbd99a9bbbbf8aabbbbe8aabbbbd9aaaaaaa9aaaaaaaa8abbbbbb98
--- 154:aedbbbbbaaedbbbbaaacbbbb9aacbbbb8aacbbbb8aaca8888aacbbbbdb9cbbbb
--- 155:bbbbbbbbbbbbbbbbbbddbbbbbd888ddbd9a9a99b999a8aad9aaaaaa8d8aa988b
--- 156:bbbbbbbbbbbbbbbbbbbbddbbbdd888dbb99a9a9ddaa8a9998aaaaaa9b889aa8d
--- 157:bbbbbdeabbbbdeaabbbbcaaabbbbcaa9bbbbcaa8888acaa8bbbbcaa8bbbbc9bd
--- 158:8aa8ebbb9a99dbbbaa8fbbbbaa8ebbbbaa9dbbbbaa9aaaaaa8aaaaaa89bbbbbb
--- 159:bdaaa989bdaaa989bdaaa989bdaaa989bdaaa998ad999800aadd0000baed0000
--- 164:0bcccddd0bccdddd0bccdddd0bccdddc0bccddcb00ccddcb0bccddcb0bccdddc
--- 165:dddcccb0ddddccb0ddddccb0cdddccb0bcddccb0bcddcc00bcddccb0cdddccb0
--- 166:fdedddddfdedddddfdedddddfdedddddfdedddddfdedddddfdedddddfdeddddd
--- 167:dddddedfdddddedfdddddedfdddddedfdddddedfdddddedfdddddedfdddddedf
--- 168:0000df9a0000de9a0000d8880000d8880000d89a0000de9c0000d89c0000de9c
--- 169:bbbbbb8abbbbbb8a8888888888888888999999a9bbbbbbc9bbbbbbc9bbbbbbc9
--- 170:aaacbbbb89aadcba889aaacc889aaaccaaa9aaaaabbb999aabbbbbb8abbbbbbb
--- 171:ab98eddbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbaaa888888ae99999bd8bbbbb
--- 172:bdde89babbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb88888aaa99999ea8bbbbb8db
--- 173:bbbbcaaaabcdaa98ccaaa988ccaaa988aaaa9aaaa999bbba8bbbbbbabbbbbbba
--- 174:a8bbbbbba8bbbbbb88888888888888889a9999999cbbbbbb9cbbbbbb9cbbbbbb
--- 175:a9fd0000a9ed0000888d0000888d0000a98d0000c9ed0000c98d0000c9ed0000
--- 180:0bdddddd0bdddddd0beddddd0bbbbedd0bddbbbb00eddddd000cdeee00000eee
--- 181:ddddddb0ddddddb0dddddeb0ddebbbb0bbbbddb0ddddde00eeedc000eee00000
--- 182:fdedddddfdedddddfdedddddfdedddddfdeeddddfdeeedddfdeeeeeeffffffff
--- 183:dddddedfdddddedfdddddedfdddddedfddddeedfdddeeedfeeeeeedfffffffff
--- 184:0000eeac0000e8ac0000eeac0000e8ac0000e8ad0000feab000008ab0000009a
--- 185:bbbbbbcabbbbbbcabbbbbbcacbbbbbcadddddddabbbbbba8bbbbbba8aaaaaa9e
--- 186:abdddddaabbbbbbaabbbbbbaabbbbbbaabbbbbbaabbbbbbaabbbbbba9dddddd9
--- 187:bb888dddee8ddbbbb8bdddddb8bbbbbbb8bbbbbb898bbbbb898bbbbbdddddddd
--- 188:ddd888bbbbbdd8eedddddb8bbbbbbb8bbbbbbb8bbbbbb898bbbbb898dddddddd
--- 189:adddddbaabbbbbbaabbbbbbaabbbbbbaabbbbbbaabbbbbbaabbbbbba9dddddd9
--- 190:acbbbbbbacbbbbbbacbbbbbbacbbbbbcaddddddd8abbbbbb8abbbbbbe9aaaaaa
--- 191:caee0000ca8e0000caee0000ca8e0000da8e0000baef0000ba800000a9000000
+-- 000:0000000000009999000aaaaa00babbbb0bbabbbb0ba9ffffab9feeee0d89ffff
+-- 001:0000000099900000aaa90000bbcab000bbbba000fffaba00eeefaba0fffaa900
+-- 002:00000000c00ff000c00ff000c6666600000666cc099669901900009100000000
+-- 003:c00ff00cc00ff00ccc6666cc0006600000099000100990019099990999900999
+-- 004:000330000004c0000004400000044000cddddddcc03ff40c0c3ff4c000c66c00
+-- 005:000eeeee00eddddd0efddddd0edeeeee0dffffffeedccccceeaabac3deba9bc4
+-- 006:ee000000dfe00000ddfe0000eede0000fffd0000ccdee000433ee000234ed000
+-- 007:0023420003baa940f344444f034444300ffffff0034cc430034444400ffffff0
+-- 008:eccccccefe9aabefedeeeedeedccccdeedccccdeedccccdeedccccdeedddddde
+-- 009:0000000d0000000d0000000d0000000ddeed000deffffffdeffeccfdfdfeccfd
+-- 010:d0000000d0000000d0000000d0000000d000deeddffffffedfcceffedfccefdf
+-- 011:000220000003300000c33c0003c33c30c33cc33c3c3333c333cccc3303333330
+-- 012:ec445565ec445556ec446555ec445655ec445555ec446555ec445656ec445556
+-- 013:0000000000000eee0000ecc2000edcc200fdccc200fdccc200deccff00efdfff
+-- 014:00000000eee000002cce00002ccde0002cccdf002cccdf00ffccee00fffdfe00
+-- 016:0adebbbb0aaabbbb0aa9abbb0afdabbb0aeeabbb0a8fabbb04a9ffff00238888
+-- 017:bbbed900bbaaab00bbae9800bb9e9800bb9e9800bbaf9800ff89a40088832000
+-- 018:000ff000000ff000006666100c0669c0c006690c000990000009000000010000
+-- 019:00cff00000cff200c22cc22c0c6666c022266220222662200299992019022991
+-- 020:0036640009966990019669100099990000feef00003ff4000034440000044000
+-- 021:eedcccccefdcccccdefeddddeeffffffeddddddd023eeeee0000000000000000
+-- 022:ccdee000ccdfe000eefee000fffed000dddde000ee3200000000000000000000
+-- 023:03444430034cc4400ffffff003444430034cc4400ffffff0023443200feddef0
+-- 024:effffffeeeeeeeeeedccccdeedccccdeedccccdeedccccdeedddddde23ffff32
+-- 025:fefeccfddffeddfddfdccffeefdcefedefdccfdefedcffdefeeefdefcfed0000
+-- 026:dfccefefdfddeffdeffccdfddefecdfeedfccdfeedffcdeffedfeeef0000defc
+-- 027:eeeeeeeeeeecceeeeeecceeeeeecceeeeeecceeeeeecceeeeeecceeeeeeeeeee
+-- 028:5556556555655556555565556555565556555555555565555565565656555556
+-- 029:00efdfff00efdcc200eedcc200eddcc200eddcc200ecefff00eddedd00023ecd
+-- 030:fffdfe002ccdfe002ccdef002ccddf002ccddf00fffece00ddedde00dce32000
+-- 032:200000002200000032220000c3202000c3220000322000002200000020000000
+-- 033:000000000000e3130000f23c00f0234400f234440f313ccc012f344402232443
+-- 034:0000000031f00000443f000043c3e000c333100044c42f0044c422ff4cc421f0
+-- 049:022f243300f22343000f32330f00fff2000ff3120000ef2300000ff100000000
+-- 050:4cc422f044421f003232ff0043ff2f0021f3f0004e000000f000000000000000
+-- 064:0000555600055666005566660055666600556666005566660005566605565556
+-- 065:6677000066777000677677006666770076666700677767006666706066670567
+-- 066:dd000000ddf0000044f0000000f0000000f0000000f0000000f0000000f00000
+-- 080:5566603356667033566770335567333305660023000000320000003200000333
+-- 081:2200056733333566322300563200000632000000332000003320000023320000
+-- 082:00d000d000f000d000fff0d000dfefd000d0fff000d030f000d030d000d030d0
+-- 096:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+-- 097:565544ce655544ce555644ce556544ce555544ce555644ce656544ce655544ce
+-- 098:0e0000000ee0000000ee0000000ee000000ee00000ee00000ee000000e000000
+-- 112:545aa345543a6346546ab5456445b345543a5345543a6345545ab346544a6646
+-- 113:5435a345547b534654aa554564aab3455435a345543ba745545ab346543a7346
+-- 114:543ba34554b6a34654355345643aa345543976455439964554365b46543aa546
 -- </TILES>
-
--- <TILES1>
--- 000:3111113412111134111111141111113411111134111111341111113411111134
--- 001:4211111142111111411111114311132143111111411111114211111142111111
--- 002:3125555531211111312555553125555531255555312555553125555531211111
--- 003:646898a864688898646aa998646888886468888864698888646898aa64689a88
--- 004:a988bccc8998bccc8a898bcc88888bcc89a88bcc989a8bcc8888bccc888bcccc
--- 005:dcdcdcdccbdcdcbccdccccdcdbcdbcccccccdccccdccbdcccccccccccccccccc
--- 006:cccccccccbcccbccccccccccccccccccccdbcccccbddccbcccbddcccccccbccc
--- 007:dcdcdcdccbdcdcbccdccccdcdbcdbcccccccdccccdccbdcccccccccccccccccc
--- 016:1211113411111111111111111311111111111111111111111121311111111111
--- 017:4211111111123111111111111111111111111111111111211211113131111111
--- 018:3125555531255555312555553125555531211111312555553125555531255555
--- 019:64688888646888a8646888886468aaa9646a98886468888864688a996469a898
--- 020:a988bccc98888bcc9a889bcca888abcc88988bcc898a8bcc8a8bbccc888bcccc
--- 021:ccccccccccdcccccdbccccdbccccbcccccccdbccdbccccccccccccbdccccdccc
--- 022:cccccccccccccccccccbcccccccdcbcccccccdcccccccccccdbdccccccdcdccc
--- 023:ccccccccccdcccccdbccccdbccccbcccccccdbccdbccccccccccccbdccccdccc
--- 032:3111113112111131111111111111113111111131111111311111113111111131
--- 033:1211111112111111111111111311132113111111111111111211111112111111
--- 034:3125555531211111312555553125555531377777313ee222313e4222313e44e7
--- 035:646898a864688898646aa998646888886468888864698888246898aa22689a88
--- 036:a9bccccc89bccccc8abccccc8bbccccc8bbccbcc98bccccc88bccccb88bcdccc
--- 037:cccccbbadbdcccb8cbdcccb8cccccbb8cccccb98cccccb89cccccb88ccdccb88
--- 048:1211113111111111111111111311111111111111111111111121311111111111
--- 049:1211111111123111111111111111111111111111111111211211113131111111
--- 050:313eeee731377777312555553125555531211111312555553125555531255555
--- 051:62688888646888a8646888886468aaa9646a98886468888864688a996469a898
--- 052:a9bcbccc98bccccc9bcccccca8bccccc8bbcbccc8bcccdcc8bccbcbc8bcccccc
--- 053:cccccb9acccccb89cbdccbb9ccccccbaccccccb8ccccccb8ccdccbb8cdcccb88
--- </TILES1>
 
 -- <MAP>
 -- 000:c1c1c1071606060606b106060606c01606060606b106060606c017c1c1c1c1c1c1171606060606b106060606c01606060606b106060606c007c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1
@@ -602,23 +773,23 @@ end
 -- 116:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1
 -- 117:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1
 -- 118:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1
--- 119:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1363636363636363636363636363636363636363636363636363636363636
--- 120:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1363636363636363636363636363636363636363636363636363636363636
--- 121:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1363636363636363636363636363636363636363636363636363636363636
--- 122:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1363636363636363636c43636363636363636363636363636363636363636
--- 123:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c13636363636363636c4c4c4c4363636363636363636363636363636363636
--- 124:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c13636363636363636c4c4c4c4001004141222363636363636363636363636
--- 125:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c13636363636363636c4c4c4c4011105151323363636363636363636363636
--- 126:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c136363636363636363636c436363636363636363636363636363636363636
--- 127:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1363636363636363636363636363636363636363636363636363636363636
--- 128:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1363636363636363636363636363636363636363636363636363636363636
--- 129:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1363636363636363636363636363636363636363636363636363636363636
--- 130:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1363636363636363636363636363636363636363636363636363636363636
--- 131:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1363636363636363636363636363636363636363636363636363636363636
--- 132:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1363636363636363636363636363636363636363636363636363636363636
--- 133:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1363636363636363636363636363636363636363636363636363636363636
--- 134:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1363636363636363636363636363636363636363636363636363636363636
--- 135:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1363636363636363636363636363636363636363636363636363636363636
+-- 119:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff363636363636363636363636363636363636363636363636363636363636
+-- 120:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff363636363636363636363636363636363636363636363636363636363636
+-- 121:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff363636363636363636363636363636363636363636363636363636363636
+-- 122:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff363636363636363636c43636363636363636363636363636363636363636
+-- 123:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff3636363636363636c4c4c4c4363636363636363636363636363636363636
+-- 124:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff3636363636363636c4c4c4c4001004141222363636363636363636363636
+-- 125:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff3636363636363636c4c4c4c4011105151323363636363636363636363636
+-- 126:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff36363636363636363636c436363636363636363636363636363636363636
+-- 127:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff363636363636363636363636363636363636363636363636363636363636
+-- 128:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff363636363636363636363636363636363636363636363636363636363636
+-- 129:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff363636363636363636363636363636363636363636363636363636363636
+-- 130:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff363636363636363636363636363636363636363636363636363636363636
+-- 131:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff363636363636363636363636363636363636363636363636363636363636
+-- 132:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff363636363636363636363636363636363636363636363636363636363636
+-- 133:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff363636363636363636363636363636363636363636363636363636363636
+-- 134:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff363636363636363636363636363636363636363636363636363636363636
+-- 135:c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff363636363636363636363636363636363636363636363636363636363636
 -- </MAP>
 
 -- <WAVES>
@@ -636,6 +807,7 @@ end
 -- 005:020002000200020002000200020002000200020002000200020002000200020002000200020002000200020002000200020002000200020002000200305000000000
 -- 006:0050000040005000600080009000b000c000d000d000e000e000f000f000f000f000f000f000f000f000f000f000f000f000f000f000f000f000f000107000000000
 -- 007:02b00210020002000200320032003200420052006200720072007200820082009200a200b200d200f200f200f200f200f200f200f200f200f200f200382000000000
+-- 008:03000300030f030f030f030e030e030e030e030d030d030c030c030c130c130c230c230c330c430c530c630c730c830ca30cb30cc30cd30cf30cf30ca00000000000
 -- 060:000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007000000000
 -- 061:000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007000000000
 -- 062:000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007000000000
@@ -668,11 +840,7 @@ end
 -- </TRACKS>
 
 -- <PALETTE>
--- 000:000000c423268c1917d9464cd35959f7b207fcf18cffd30c29366f3b5dc95971ded2cac6f4f4f45e5e692c2c2c1d1d1d
--- 001:0004001c10206d2c34855528d29d501b401ca5bd9759785114202c142c50204c893d4a5d655439918166312206182428
+-- 000:0000005d275db13e53c66948ffcd75a7f07038b76425717929366f3b5dc941a6f673eff7f4f4f494b0c2566c86333c57
+-- 001:5d44100000007d6d2c6d5d300000c60000ce0099dadec2f2000000000000000000000000000000000000000000000000
 -- </PALETTE>
-
--- <PALETTE1>
--- 000:0000004c555d43484c566166fffffac4c3c12c2c2ccecace7360535b4654847a5c5c846670993289bf2dd6d2d2000000
--- </PALETTE1>
 
