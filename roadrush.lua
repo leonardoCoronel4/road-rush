@@ -376,7 +376,9 @@ function Game:update(dt)
     self:draw_entities()
 
     if self.state == "game over" then
-        print("GAME OVER", 64, 73, 0, false, 2)
+        vbank(1)
+        print("GAME OVER", 64, 60, 3, false, 2)
+        vbank(0)
     else
         self:update_entities(dt)
     end
