@@ -74,21 +74,54 @@ end
 function Entity:update(dt)
 end
 
+CarConfig = {
+    [256] = {sprW = 2, sprH = 4, w = 16, h = 28, ox = 0, oy = 0}, -- Deportivo amarillo / Chances 2/79
+    [258] = {sprW = 2, sprH = 4, w = 16, h = 28, ox = 0, oy = 0}, -- Deportivo Blanco / Chances 2/79
+    [260] = {sprW = 2, sprH = 4, w = 16, h = 28, ox = 0, oy = 0}, -- Rapidin rojo / Chances 15/79
+    [262] = {sprW = 2, sprH = 4, w = 16, h = 28, ox = 0, oy = 0}, -- Rapidin blanco / Chances 15/79
+    [264] = {sprW = 2, sprH = 4, w = 16, h = 29, ox = 0, oy = 0}, -- Común rojo / Chances 12/79
+    [266] = {sprW = 2, sprH = 4, w = 16, h = 29, ox = 0, oy = 0}, -- Común azul / Chances 12/79
+    [268] = {sprW = 2, sprH = 3, w = 16, h = 24, ox = 0, oy = 0}, -- Auto croto rojo / Chances 12/79
+    [270] = {sprW = 2, sprH = 3, w = 16, h = 24, ox = 0, oy = 0}, -- Auto croto azul / Chances 12/79
+    [320] = {sprW = 2, sprH = 4, w = 10, h = 28, ox = 3, oy = 1}, -- La sanchez del GTA SA / Chances 2/79
+    [322] = {sprW = 2, sprH = 4, w = 12, h = 29, ox = 2, oy = 0}, -- La moto del enano de Ratatouille / Chances 4/79
+    [324] = {sprW = 2, sprH = 8, w = 16, h = 68, ox = 0, oy = 0}, -- Camión 1 / Chances 6/79
+    [326] = {sprW = 2, sprH = 8, w = 16, h = 68, ox = 0, oy = 0}, -- Camión 2 / Chances 6/79
+    --[328] = {sprW = 8, sprH = 8, w = 64, h = 64, ow = 0, oh = 0}, -- Tanque / Chances 1/79
+}
+
+
+local CarSprites = {
+    256, 258, 260, 262, 260, 262, 264, 266, 264, 266, 264, 266, 264, 266, 264, 266, 264, 266, 268, 270, 268, 270,
+    268, 270, 268, 270, 268, 270, 268, 270, 320, 322, 322, 324, 326, 324, 326, 324, 326, 256, 258, 260, 262,
+    260, 262, 264, 266, 264, 266, 264, 266, 264, 266, 264, 266, 264, 266, 268, 270, 268, 270, 268, 270, 268, 270,
+    268, 270, 268, 270, 320, 322, 322, 324, 326, 324, 326, 324, 326,
+    --328
+}
+
+function canGenerateCar ()
+	return math.random()>0.5
+end
+
+function getCarSprite()
+    return CarSprites[math.random(1, #CarSprites)]
+end
+
 Car = Entity:new{
     type = "enemy",
     pos = 0,
-    ox = 2,
-    oy = 2,
-    w = 13,
-    h = 28,
+    sprW = 2,
+    sprH = 4,
+    w = 2,
+    h = 4,
     sprh = 24,
-    spr = 258,
+    spr = 326,
     direction = 0
 }
 
 function Car:draw()
-    spr(self.spr, self.x, self.y, -1, 1, self.direction, 0, 2, 4)
-    -- rectb(self.x + self.ox, self.y + self.oy, self.w, self.h, 15)
+    spr(self.spr, self.x, self.y, -1, 1, self.direction, 0, self.sprW, self.sprH)
+    --rectb(self.x + self.ox, self.y + self.oy, self.w, self.h, 12)
 end
 
 function Car:update(dt)
@@ -600,25 +633,65 @@ function Game:update_road(dt)
         if -self.road_pos > self.last_obstacle then
             local p = {42, 64, 86}
             local i = math.random(1, #p)
+            spawnNewCar(self, 59, p, i)
+            spawnNewCar(self, 86, p, i)
 
-            if self.distance > 20 and self.car == false then
-                table.insert(self.entities, Car:new{
-                    pos = -1 * self.road_pos,
-                    x = p[i] + math.random(1, 5) - 2,
-                    y = -20,
-                    stage = self,
-                    spr = 258,
-                    name = "car",
-                    direction = -1
-                })
-                self.entity_count = self.entity_count + 1
-                self.car = true
-            end
-
-            self.last_obstacle = -1 * self.road_pos + self.next_obstacle
+            --self.last_obstacle = -1 * self.road_pos + self.next_obstacle
         end
     end
 end
+
+function spawnNewCar(self, carril, p, i)
+    local selectedSprite = getCarSprite()
+    local posibleColition = findColition(self, carril, selectedSprite)
+    if (canGenerateCar() and frame%15==0 and not posibleColition) then
+        local spriteConfig = CarConfig[selectedSprite]
+        table.insert(self.entities, Car:new{
+            pos = -1 * self.road_pos,
+            x = carril,
+            y = -80,
+            stage = self,
+            spr = selectedSprite,
+            w = spriteConfig.w,
+            h = spriteConfig.h,
+            sprW = spriteConfig.sprW,
+            sprH = spriteConfig.sprH,
+            ox = spriteConfig.ox,
+            oy = spriteConfig.oy,
+            name = "car",
+            direction = -1
+        })
+        self.entity_count = self.entity_count + 1
+        self.car = true
+    end
+end
+
+function findColition(self, carril, spr)
+    for i, e in pairs(self.entities) do
+        if (e.y < -15 and e.x == carril) then
+            return true
+        end
+    end
+    return false
+end
+
+--[[ function findColition(self, carril, spr)
+    for i, e in pairs(self.entities) do
+        if e.spr == 324 or e.spr == 326 then
+            if e.x == carril and e.y < -15 then
+                return true
+            end
+        elseif e.spr == 328 then
+            if e.x == carril and e.y < -15 then
+                return true
+            end
+        elseif e.y < -40 and e.x == carril then
+            return true
+        end
+    end
+    return false
+end ]]
+
 
 function Game:pauseGame()
     saveEntities_ = {}
@@ -736,6 +809,7 @@ function TIC()
     cls()
     vbank(0)
     local actual_t = time()
+    frame = (frame + 1) % 60
     local dt = actual_t - last_t
 
     scroll_y = scroll_y + 0.6
@@ -744,7 +818,6 @@ function TIC()
     end
 
     last_t = actual_t
-    frame = (frame + 1) % 60
 end
 
 -- <TILES>
@@ -920,10 +993,10 @@ end
 -- 009:eee000003334e000334334e03334366e33334662333323323333343233333232
 -- 010:00000eee000ea9990ea99a99e669a999866a99998998999989a9999989899999
 -- 011:eee00000999ae00099a99ae0999a966e9999a6689999899899999a9899999898
--- 012:0000000000000000000000000000000000000eee000e43330e433433e6634333
--- 013:00000000000000000000000000000000eee000003334e000334334e03334366e
--- 014:0000000000000000000000000000000000000eee000ea9990ea99a99e669a999
--- 015:00000000000000000000000000000000eee00000999ae00099a99ae0999a966e
+-- 012:00000eee000e43330e433433e663433326643333233233332323333323333333
+-- 013:eee000003334e000334334e03334366e33334662333323323333323233333332
+-- 014:00000eee000ea9990ea99a99e669a999866a9999899899998989999989999999
+-- 015:eee00000999ae00099a99ae0999a96609999a66099998990999998909999999e
 -- 016:07fedddd05dedddd0f6eddddf7fedddd07eefddd07f5677707d5777707d57777
 -- 017:ddddef70dddded50dddde6f0ddddef7fdddfee7077765f7077775d7077775d70
 -- 018:0cfedddd0dbedddd0fbeddddfcfedddd0ceefddd0cfdbccc0cddcccc0cddcccc
@@ -936,10 +1009,10 @@ end
 -- 025:3333323233333332fffff232eeeeff32dddddee4ddddde44dddde4f233334ef2
 -- 026:8989999989999999898fffff89ffeeeeaeedddddaaeddddd8faedddd8fea9999
 -- 027:9999989899999998fffff898eeeeff98dddddeeadddddeaaddddeaf89999aef8
--- 028:26643333233233332323333323333333232fffff23ffeeee4eeddddd44eddddd
--- 029:33334662333323323333323233333332fffff232eeeeff32dddddee4ddddde44
--- 030:866a9999899899998989999989999999898fffff89ffeeeeaeedddddaaeddddd
--- 031:9999a668999989989999989899999998fffff898eeeeff98dddddeeadddddeaa
+-- 028:232fffff23ffeeee4eeddddd44eddddd2f4edddd22f2333323f3333323f33333
+-- 029:fffff232eeeeff32dddddee4ddddde44dddde4f233332f2233333f3233333f32
+-- 030:898fffff89ffeeeeaeedddddaaeddddd8faedddd88f8999989f9999989f99999
+-- 031:fffff898eeeeff98dddddee8dddddea8ddddeaf899998f8899999f9a99999f9a
 -- 032:07d7666607d7666607f7755507e77fff0cd67e0e0ce77dee05677e0d05677fdd
 -- 033:66667d7066667d7055577f70fff77e70e0e76dc0eed77ec0d0e77650ddf77650
 -- 034:0cdcbbbb0cdcbbbb0cfccddd0ceccfff0cdbce0e0ceccdee0dbcce0d0dbccfdd
@@ -952,10 +1025,10 @@ end
 -- 041:33332ff233332f2233332f2f33332f3233332f2433332f2244343f32eeeeef32
 -- 042:8ff8999988f89999f8f8999989f89999a8f8999988f8999989f9a9aa89feeeee
 -- 043:99998ff899998f8899998f8f99998f9899998f8a99998f88aa9a9f98eeeeef98
--- 044:2f4edddd22f2333323f3333323f3333334f34344343eeeee233edddd23332222
--- 045:dddde4f233332f2233333f3233333f3244343f43eeeee343dddde33222223332
--- 046:8faedddd88f8999989f9999989f999999af9a9aa9a9eeeee899edddd89998888
--- 047:ddddeaf899998f8899999f9899999f98aa9a9fa9eeeee9a9dddde99888889998
+-- 044:34f34344343eeeee233edddd23332222e133dfff0212efff002123330000eeee
+-- 045:44343f43eeeee343dddde33222223332fffd331efffe212033321200eeee0000
+-- 046:9af9a9aa9a9eeeee899edddd89998888e199dfff0818efff008189990000eeee
+-- 047:aa9a9fa8eeeee9a8dddde99888889998fffd9919fffe818999981808eeee0008
 -- 048:05677d0c07677ded07577eed07777ddd055770000fdd5fff00fdfeee0000fddd
 -- 049:c0d77650ded77670dee77570ddd7777000077550fff5ddf0eeefdf00dddf0000
 -- 050:0dbccd0c0cbccded0cdcceed0ccccddd0ddcc0000feebfff00fefeee0000fddd
@@ -968,10 +1041,7 @@ end
 -- 057:ddddef43dddde343dddef33222223332fffd331efffe212033321200eeee0000
 -- 058:9afedddd9a9edddd899feddd89998888e199dfff0818efff008189990000eeee
 -- 059:ddddefa9dddde9a9dddef99888889998fffd991efffe818099981800eeee0000
--- 060:e133dfff0212efff002123330000eeee00000000000000000000000000000000
--- 061:fffd331efffe212033321200eeee000000000000000000000000000000000000
--- 062:e199dfff0818efff008189990000eeee00000000000000000000000000000000
--- 063:fffd991efffe818099981800eeee000000000000000000000000000000000000
+-- 063:0000000e00000000000000000000000000000000000000000000000000000000
 -- 064:000000000000000d0000000e0000000f000000040000004b0000432d000023de
 -- 065:00000000d0000000e0000000f000000040000000b4000000d2340000ed320000
 -- 066:0000000000000000000000000000000200000021000000110000044300002344
