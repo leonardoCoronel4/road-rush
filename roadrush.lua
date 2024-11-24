@@ -75,32 +75,113 @@ function Entity:update(dt)
 end
 
 CarConfig = {
-    [256] = {sprW = 2, sprH = 4, w = 16, h = 28, ox = 0, oy = 0}, -- Deportivo amarillo / Chances 2/79
-    [258] = {sprW = 2, sprH = 4, w = 16, h = 28, ox = 0, oy = 0}, -- Deportivo Blanco / Chances 2/79
-    [260] = {sprW = 2, sprH = 4, w = 16, h = 28, ox = 0, oy = 0}, -- Rapidin rojo / Chances 15/79
-    [262] = {sprW = 2, sprH = 4, w = 16, h = 28, ox = 0, oy = 0}, -- Rapidin blanco / Chances 15/79
-    [264] = {sprW = 2, sprH = 4, w = 16, h = 29, ox = 0, oy = 0}, -- Común rojo / Chances 12/79
-    [266] = {sprW = 2, sprH = 4, w = 16, h = 29, ox = 0, oy = 0}, -- Común azul / Chances 12/79
-    [268] = {sprW = 2, sprH = 3, w = 16, h = 24, ox = 0, oy = 0}, -- Auto croto rojo / Chances 12/79
-    [270] = {sprW = 2, sprH = 3, w = 16, h = 24, ox = 0, oy = 0}, -- Auto croto azul / Chances 12/79
-    [320] = {sprW = 2, sprH = 4, w = 10, h = 28, ox = 3, oy = 1}, -- La sanchez del GTA SA / Chances 2/79
-    [322] = {sprW = 2, sprH = 4, w = 12, h = 29, ox = 2, oy = 0}, -- La moto del enano de Ratatouille / Chances 4/79
-    [324] = {sprW = 2, sprH = 8, w = 16, h = 68, ox = 0, oy = 0}, -- Camión 1 / Chances 6/79
-    [326] = {sprW = 2, sprH = 8, w = 16, h = 68, ox = 0, oy = 0}, -- Camión 2 / Chances 6/79
-    --[328] = {sprW = 8, sprH = 8, w = 64, h = 64, ow = 0, oh = 0}, -- Tanque / Chances 1/79
+    [256] = {
+        sprW = 2,
+        sprH = 4,
+        w = 16,
+        h = 28,
+        ox = 0,
+        oy = 0
+    }, -- Deportivo amarillo / Chances 2/79
+    [258] = {
+        sprW = 2,
+        sprH = 4,
+        w = 16,
+        h = 28,
+        ox = 0,
+        oy = 0
+    }, -- Deportivo Blanco / Chances 2/79
+    [260] = {
+        sprW = 2,
+        sprH = 4,
+        w = 16,
+        h = 28,
+        ox = 0,
+        oy = 0
+    }, -- Rapidin rojo / Chances 15/79
+    [262] = {
+        sprW = 2,
+        sprH = 4,
+        w = 16,
+        h = 28,
+        ox = 0,
+        oy = 0
+    }, -- Rapidin blanco / Chances 15/79
+    [264] = {
+        sprW = 2,
+        sprH = 4,
+        w = 16,
+        h = 29,
+        ox = 0,
+        oy = 0
+    }, -- Común rojo / Chances 12/79
+    [266] = {
+        sprW = 2,
+        sprH = 4,
+        w = 16,
+        h = 29,
+        ox = 0,
+        oy = 0
+    }, -- Común azul / Chances 12/79
+    [268] = {
+        sprW = 2,
+        sprH = 3,
+        w = 16,
+        h = 24,
+        ox = 0,
+        oy = 0
+    }, -- Auto croto rojo / Chances 12/79
+    [270] = {
+        sprW = 2,
+        sprH = 3,
+        w = 16,
+        h = 24,
+        ox = 0,
+        oy = 0
+    }, -- Auto croto azul / Chances 12/79
+    [320] = {
+        sprW = 2,
+        sprH = 4,
+        w = 10,
+        h = 28,
+        ox = 3,
+        oy = 1
+    }, -- La sanchez del GTA SA / Chances 2/79
+    [322] = {
+        sprW = 2,
+        sprH = 4,
+        w = 12,
+        h = 29,
+        ox = 2,
+        oy = 2
+    }, -- La moto del enano de Ratatouille / Chances 4/79
+    [324] = {
+        sprW = 2,
+        sprH = 8,
+        w = 16,
+        h = 65,
+        ox = 0,
+        oy = 0
+    }, -- Camión 1 / Chances 6/79
+    [326] = {
+        sprW = 2,
+        sprH = 8,
+        w = 16,
+        h = 65,
+        ox = 0,
+        oy = 0
+    } -- Camión 2 / Chances 6/79
+    -- [328] = {sprW = 8, sprH = 8, w = 64, h = 64, ow = 0, oh = 0}, -- Tanque / Chances 1/79
 }
 
-
-local CarSprites = {
-    256, 258, 260, 262, 260, 262, 264, 266, 264, 266, 264, 266, 264, 266, 264, 266, 264, 266, 268, 270, 268, 270,
-    268, 270, 268, 270, 268, 270, 268, 270, 320, 322, 322, 324, 326, 324, 326, 324, 326, 256, 258, 260, 262,
-    260, 262, 264, 266, 264, 266, 264, 266, 264, 266, 264, 266, 264, 266, 268, 270, 268, 270, 268, 270, 268, 270,
-    268, 270, 268, 270, 320, 322, 322, 324, 326, 324, 326, 324, 326,
-    --328
+local CarSprites = {256, 258, 260, 262, 260, 262, 264, 266, 264, 266, 264, 266, 264, 266, 264, 266, 264, 266, 268, 270,
+                    268, 270, 268, 270, 268, 270, 268, 270, 268, 270, 320, 322, 322, 324, 326, 324, 326, 324, 326, 256,
+                    258, 260, 262, 260, 262, 264, 266, 264, 266, 264, 266, 264, 266, 264, 266, 264, 266, 268, 270, 268,
+                    270, 268, 270, 268, 270, 268, 270, 268, 270, 320, 322, 322, 324, 326, 324, 326, 324, 326 -- 328
 }
 
-function canGenerateCar ()
-	return math.random()>0.5
+function canGenerateCar()
+    return math.random() > 0.5
 end
 
 function getCarSprite()
@@ -121,7 +202,7 @@ Car = Entity:new{
 
 function Car:draw()
     spr(self.spr, self.x, self.y, -1, 1, self.direction, 0, self.sprW, self.sprH)
-    --rectb(self.x + self.ox, self.y + self.oy, self.w, self.h, 12)
+    -- rectb(self.x + self.ox, self.y + self.oy, self.w, self.h, 12)
 end
 
 function Car:update(dt)
@@ -145,41 +226,23 @@ Player = Entity:new{
     road_pos = 0,
     distance = 0,
     spr = 0,
-    car = nil
+    car = nil,
+    landing = false
 }
 
 function Player:draw()
-    if (self.spr > 0) then
-        -- spr(256, self.x, self.y, -1, 1, 0, 0, 2, 4)
-    end
-    if self.jumping then
+    if self.jumping and not self.landing then
         self:jump()
     end
     -- rectb(self.x + self.ox, self.y + self.oy, self.w, self.h, 12)
 end
 
 function Player:jump()
-    if self.car then
-        self.car.type = "exCarPlayer"
-    end
-    if ((frame - self.jump_time) % 60 <= 5) then
-        if ((frame - self.jump_time) % 60 == 0 and self.jump_finish) then
-            self.jump_finish = false
-            self.jumping = false
-            self.alive = false
-        else
-            spr(461, self.jumpx + 3, self.jumpy + 3, 0, 1, 0, 0, 1, 1)
-        end
-    elseif ((frame - self.jump_time) % 60 <= 10) then
-        spr(460, self.jumpx + 3, self.jumpy, 0, 1, 0, 0, 1, 1)
-    else
-        self.x = self.jumpx
-        self.y = self.jumpy
-        self.jump_finish = true
-        self.jumpy = self.jumpy - 0.5
-        self.car = nil
-        spr(462, self.jumpx + 3, self.jumpy, 0, 1, 0, 0, 1, 2)
-    end
+    self.x = self.jumpx
+    self.y = self.jumpy
+    self.jump_finish = true
+    self.jumpy = self.jumpy - 0.5
+    spr(462, self.jumpx + 3, self.jumpy, 0, 1, 0, 0, 1, 2)
 end
 
 function Player:update(dt)
@@ -187,6 +250,11 @@ function Player:update(dt)
         if self.car then
             self.jumpy = self.car.y
             self.jumpx = self.car.x
+        end
+    else
+        if self.car and not self.landing then
+            self.car.type = 'exCarPlayer'
+            self.car = nil
         end
     end
 end
@@ -196,33 +264,33 @@ CarPlayer = Entity:new{
     pos = 0,
     x = 0,
     y = 0,
-    ox = 2,
+    ox = 1,
     oy = 2,
     w = 13,
     h = 28,
     sprh = 24,
     spr = 258,
+    sprW = 2,
+    sprH = 4,
     speedX = .05,
     direction = 1
 }
 
 function CarPlayer:draw()
-    spr(self.spr, self.x, self.y, -1, 1, self.direction, 0, 2, 4)
+    spr(self.spr, self.x, self.y, -1, 1, self.direction, 0, self.sprW, self.sprH)
     -- rectb(self.x + self.ox, self.y + self.oy, self.w, self.h, 15)
 end
 
 function CarPlayer:update(dt)
     if (self.type == "carPlayer") then
         if (self.y > 103) then
-            self.y = self.y - 1
+            self.y = self.y - 1.5
         elseif (self.y < 103) then
-            self.y = self.y + 1
+            self.y = self.y + 1.5
         end
         if (self.y > 102 and self.y < 104) then
             self.y = 103
         end
-    end
-    if self.type == "carPlayer" then
         if btn(2) then -- left
             if self.vx >= -1 then
                 self.vx = self.vx - self.speedX
@@ -245,16 +313,12 @@ function CarPlayer:update(dt)
             end
         end
     else
-        self.vy = 1.2
+        self.vy = 1.5
+        self.vx = 0
     end
 
     self.y = self.y + self.vy
     self.x = self.x + self.vx
-
-    if self.jumping == false then
-        self.jumpy = self.y
-        self.jumpx = self.x
-    end
     self:cartsLimits()
 end
 
@@ -380,7 +444,7 @@ function Menu:update(dt)
     spr(143, 80, (self.p.pos() - 1) * 10 + y - 2)
 
     if frame < 30 then
-        print("Press X or Z to continue", 55, y + 50, 4) 
+        print("Press X or Z to continue", 55, y + 50, 4)
     end
 
     if btnp(0) then
@@ -410,7 +474,8 @@ Game = Stage:new{
     poli = false,
     tanke = false,
     explosion = false,
-    jumpAnimation = false
+    jumpAnimation = false,
+    timer_jump = 30
 }
 
 function Game:init()
@@ -461,52 +526,46 @@ function Game:update(dt)
         return
     end
 
-    if key(48) and self.player.jumping == false and self.explosion == false then
+    if key(48) and not self.jumpAnimation then
+        self.player.landing = false
         self.player.jumping = true
-        self.player.jump_time = frame
+        self.jumpAnimation = true
+        self.timer_jump = 45
     end
 
     self:draw_road()
     self:draw_entities()
-
-    if self.player.alive == false then
-        self.state = "game over"
-        vbank(1)
-        spr(463, self.player.x + 3, self.player.y, 0, 1, 0, 0, 1, 2)
-        vbank(0)
-    end
-    if self.state == "game over" then
-        vbank(1)
-        print("GAME OVER", 64, 60, 3, false, 2)
-        if frame < 30 then
-            print("Press X or Z to continue", 55, 104, 15) 
-        end
-        vbank(0)
-    else
-        self:update_entities(dt)
-    end
-
     self:update_road(dt)
+
+    if (self.jumpAnimation and self.timer_jump <= 0) then
+        self.player.jump_finish = false
+        self.player.jumping = false
+        self.player.alive = false
+    end
+
     for i, e in pairs(self.entities) do
         if self.player:overlap(e) then
-            if e.type == "enemy" and self.player.jumping then
+            if e.type == "enemy" and self.player.jumping and not self.player.landing then
+                self.player.landing = true
+                self.player.jumping = false
+                self.jumpAnimation = false
                 self.player.car = CarPlayer:new{
                     x = e.x,
                     y = e.y,
-                    vx = 0.5,
+                    vx = 0,
                     vy = 0,
                     w = e.w,
                     spr = e.spr,
                     type = "carPlayer",
                     pos = 0,
-                    ox = 2,
-                    oy = 2,
+                    ox = e.ox,
+                    oy = e.oy,
                     h = e.h,
                     speedX = .05,
-                    direction = 1
+                    direction = 1,
+                    sprW = e.sprW,
+                    sprH = e.sprH
                 }
-                self.player.jumping = false
-                self.player.jump_finish = false
                 self:add_entity(self.player.car)
                 e.alive = false
                 break
@@ -538,6 +597,25 @@ function Game:update(dt)
         end
     end
 
+    if self.player.alive == false then
+        self.jumpAnimation = true
+        self.state = "game over"
+        vbank(1)
+        spr(463, self.player.x + 3, self.player.y, 0, 1, 0, 0, 1, 2)
+        vbank(0)
+    end
+
+    if self.state == "game over" then
+        vbank(1)
+        print("GAME OVER", 64, 60, 3, false, 2)
+        if frame < 30 then
+            print("Press X or Z to continue", 55, 104, 15)
+        end
+        vbank(0)
+    else
+        self:update_entities(dt)
+    end
+
     if self.state == "game over" then
         if btn(4) or btn(5) then
             if saveData then
@@ -555,6 +633,7 @@ function Game:update(dt)
             sm.switch("menu")
         end
     end
+    self.timer_jump = self.timer_jump - 1
 end
 
 function Game:draw_entities()
@@ -563,8 +642,8 @@ function Game:draw_entities()
     end)
     for i = 1, #self.entities do
         local e = self.entities[i]
-        vbank(1)
-        e:draw()
+        vbank(1) 
+        e:draw() 
         vbank(0)
         if settings.bb then
             rectb(e.x + e.ox, e.y + e.oy, e.w, e.h, 0)
@@ -579,7 +658,7 @@ function Game:update_entities(dt)
         local e = self.entities[i]
         e:update(dt)
         if e.alive and e.y < 150 then
-            table.insert(entities_, e) 
+            table.insert(entities_, e)
         else
             if e.name == 'car' then
                 self.car = false
@@ -605,7 +684,7 @@ function Game:draw_road()
     print("actual", 8, 18, 6)
     print(string.format("%06.f m", self.distance), 8, 26, 4, true)
     print("high", 8, 2, 6)
-    print(string.format("%06.f m", settings.high_score), 8, 10, 4, true) 
+    print(string.format("%06.f m", settings.high_score), 8, 10, 4, true)
 
     if key(50) and self.state == "game" then
         self:pauseGame()
@@ -636,7 +715,7 @@ function Game:update_road(dt)
             spawnNewCar(self, 59, p, i)
             spawnNewCar(self, 86, p, i)
 
-            --self.last_obstacle = -1 * self.road_pos + self.next_obstacle
+            -- self.last_obstacle = -1 * self.road_pos + self.next_obstacle
         end
     end
 end
@@ -644,7 +723,7 @@ end
 function spawnNewCar(self, carril, p, i)
     local selectedSprite = getCarSprite()
     local posibleColition = findColition(self, carril, selectedSprite)
-    if (canGenerateCar() and frame%15==0 and not posibleColition) then
+    if (canGenerateCar() and frame % 15 == 0 and not posibleColition) then
         local spriteConfig = CarConfig[selectedSprite]
         table.insert(self.entities, Car:new{
             pos = -1 * self.road_pos,
@@ -692,7 +771,6 @@ end
     return false
 end ]]
 
-
 function Game:pauseGame()
     saveEntities_ = {}
     saveData = {
@@ -707,8 +785,8 @@ function Game:pauseGame()
         car = self.car
     }
     for i = 1, #self.entities do
-        local e = self.entities[i] 
-        if e.type ~= 'carPlayer' and e.type ~= 'player' and e.type ~= 'exCarPlayer' then 
+        local e = self.entities[i]
+        if e.type ~= 'carPlayer' and e.type ~= 'player' and e.type ~= 'exCarPlayer' then
             table.insert(saveEntities_, e)
         end
     end
@@ -733,7 +811,7 @@ function Pause:update(dt)
     spr(143, 80, (self.p.pos() - 1) * 10 + y - 2)
 
     if frame < 30 then
-        print("Press X or Z to continue", 55, 104, 4) 
+        print("Press X or Z to continue", 55, 104, 4)
     end
 
     if btnp(0) then
@@ -996,7 +1074,7 @@ end
 -- 012:00000eee000e43330e433433e663433326643333233233332323333323333333
 -- 013:eee000003334e000334334e03334366e33334662333323323333323233333332
 -- 014:00000eee000ea9990ea99a99e669a999866a9999899899998989999989999999
--- 015:eee00000999ae00099a99ae0999a96609999a66099998990999998909999999e
+-- 015:eee00000999ae00099a99ae0999a966e9999a668999989989999989899999998
 -- 016:07fedddd05dedddd0f6eddddf7fedddd07eefddd07f5677707d5777707d57777
 -- 017:ddddef70dddded50dddde6f0ddddef7fdddfee7077765f7077775d7077775d70
 -- 018:0cfedddd0dbedddd0fbeddddfcfedddd0ceefddd0cfdbccc0cddcccc0cddcccc
@@ -1012,7 +1090,7 @@ end
 -- 028:232fffff23ffeeee4eeddddd44eddddd2f4edddd22f2333323f3333323f33333
 -- 029:fffff232eeeeff32dddddee4ddddde44dddde4f233332f2233333f3233333f32
 -- 030:898fffff89ffeeeeaeedddddaaeddddd8faedddd88f8999989f9999989f99999
--- 031:fffff898eeeeff98dddddee8dddddea8ddddeaf899998f8899999f9a99999f9a
+-- 031:fffff898eeeeff98dddddeeadddddeaaddddeaf899998f8899999f9899999f98
 -- 032:07d7666607d7666607f7755507e77fff0cd67e0e0ce77dee05677e0d05677fdd
 -- 033:66667d7066667d7055577f70fff77e70e0e76dc0eed77ec0d0e77650ddf77650
 -- 034:0cdcbbbb0cdcbbbb0cfccddd0ceccfff0cdbce0e0ceccdee0dbcce0d0dbccfdd
@@ -1028,7 +1106,7 @@ end
 -- 044:34f34344343eeeee233edddd23332222e133dfff0212efff002123330000eeee
 -- 045:44343f43eeeee343dddde33222223332fffd331efffe212033321200eeee0000
 -- 046:9af9a9aa9a9eeeee899edddd89998888e199dfff0818efff008189990000eeee
--- 047:aa9a9fa8eeeee9a8dddde99888889998fffd9919fffe818999981808eeee0008
+-- 047:aa9a9fa9eeeee9a9dddde99888889998fffd991efffe818099981800eeee0000
 -- 048:05677d0c07677ded07577eed07777ddd055770000fdd5fff00fdfeee0000fddd
 -- 049:c0d77650ded77670dee77570ddd7777000077550fff5ddf0eeefdf00dddf0000
 -- 050:0dbccd0c0cbccded0cdcceed0ccccddd0ddcc0000feebfff00fefeee0000fddd
@@ -1041,7 +1119,6 @@ end
 -- 057:ddddef43dddde343dddef33222223332fffd331efffe212033321200eeee0000
 -- 058:9afedddd9a9edddd899feddd89998888e199dfff0818efff008189990000eeee
 -- 059:ddddefa9dddde9a9dddef99888889998fffd991efffe818099981800eeee0000
--- 063:0000000e00000000000000000000000000000000000000000000000000000000
 -- 064:000000000000000d0000000e0000000f000000040000004b0000432d000023de
 -- 065:00000000d0000000e0000000f000000040000000b4000000d2340000ed320000
 -- 066:0000000000000000000000000000000200000021000000110000044300002344
