@@ -232,17 +232,17 @@ Car = Entity:new{
 
 function Car:draw()
     spr(self.spr, self.x, self.y, -1, 1, self.direction, 0, self.sprW, self.sprH)
-    -- rectb(self.x + self.ox, self.y + self.oy, self.w, self.h, 12)
+    --rectb(self.x + self.ox, self.y + self.oy, self.w, self.h, 12)
 end
 
 function Car:update(dt, direction)
-    --if (direction == 1) then
+    if (direction == 1) then
         self.y = self.y - (self.stage.road_vy * dt) / 2
-    --[[ else 
+    else 
         if (direction == -1) then
-        self.y = self.y - (self.stage.road_vy * dt) / 2
-        end ]]
-    --end
+        self.y = self.y - (self.stage.road_vy * dt) * 0.8
+        end
+    end
     self.pos = self.stage.road_pos
 end
 
@@ -306,7 +306,7 @@ CarPlayer = Entity:new{
 
 function CarPlayer:draw()
     spr(self.spr, self.x, self.y, -1, 1, self.direction, 0, self.sprW, self.sprH)
-    -- rectb(self.x + self.ox, self.y + self.oy, self.w, self.h, 15)
+    --rectb(self.x + self.ox, self.y + self.oy, self.w, self.h, 15)
 end
 
 function CarPlayer:update(dt)
@@ -340,6 +340,9 @@ function CarPlayer:update(dt)
                 end
             end
         end
+    else
+        self.vx = 0
+        self.vy = 1.5
     end
 
     self.y = self.y + self.vy
@@ -720,11 +723,11 @@ end
 
 function Game:update_road(dt)
     if self.state == "game" then
-        self.road_vy = self.road_vy - 0.000001 * dt
+        self.road_vy = self.road_vy - 0.000001 * dt * 0.7
     end
 
     if self.state ~= "game over" then
-        self.road_pos = self.road_pos + self.road_vy * dt
+        self.road_pos = self.road_pos + self.road_vy * dt * 0.7
     end
 
     if self.state == "game" then
