@@ -232,29 +232,20 @@ Player = Entity:new{
 
 function Player:draw()
     if self.jumping and not self.landing then
-        self:jump()
+        self.x = self.jumpx
+        self.y = self.jumpy
+        self.jump_finish = true
+        self.jumpy = self.jumpy - 0.5
+        spr(462, self.jumpx + 3, self.jumpy, 0, 1, 0, 0, 1, 2)
     end
     -- rectb(self.x + self.ox, self.y + self.oy, self.w, self.h, 12)
 end
 
-function Player:jump()
-    self.x = self.jumpx
-    self.y = self.jumpy
-    self.jump_finish = true
-    self.jumpy = self.jumpy - 0.5
-    spr(462, self.jumpx + 3, self.jumpy, 0, 1, 0, 0, 1, 2)
-end
-
 function Player:update(dt)
-    if self.jumping == false then
+    if not self.jumping then
         if self.car then
             self.jumpy = self.car.y
             self.jumpx = self.car.x
-        end
-    else
-        if self.car and not self.landing then
-            self.car.type = 'exCarPlayer'
-            self.car = nil
         end
     end
 end
@@ -312,9 +303,6 @@ function CarPlayer:update(dt)
                 end
             end
         end
-    else
-        self.vy = 1.5
-        self.vx = 0
     end
 
     self.y = self.y + self.vy
@@ -526,11 +514,14 @@ function Game:update(dt)
         return
     end
 
-    if key(48) and not self.jumpAnimation then
+    if keyp(48) and not self.jumpAnimation and not self.explosion then
         self.player.landing = false
         self.player.jumping = true
         self.jumpAnimation = true
         self.timer_jump = 45
+        self.player.car.type = 'exCarPlayer'
+        self.player.car.vy = 1.5
+        self.player.car = nil
     end
 
     self:draw_road()
@@ -598,7 +589,6 @@ function Game:update(dt)
     end
 
     if self.player.alive == false then
-        self.jumpAnimation = true
         self.state = "game over"
         vbank(1)
         spr(463, self.player.x + 3, self.player.y, 0, 1, 0, 0, 1, 2)
@@ -642,8 +632,8 @@ function Game:draw_entities()
     end)
     for i = 1, #self.entities do
         local e = self.entities[i]
-        vbank(1) 
-        e:draw() 
+        vbank(1)
+        e:draw()
         vbank(0)
         if settings.bb then
             rectb(e.x + e.ox, e.y + e.oy, e.w, e.h, 0)
@@ -774,14 +764,10 @@ end ]]
 function Game:pauseGame()
     saveEntities_ = {}
     saveData = {
-        player_x = self.player.x,
-        player_y = self.player.y,
-        player_vx = self.player.vx,
-        player_vy = self.player.vy,
+        player = self.player,
         road_vy = self.road_vy,
         road_pos = self.road_pos,
         distance = self.distance,
-        carPlayer = self.player.car,
         car = self.car
     }
     for i = 1, #self.entities do
@@ -831,14 +817,10 @@ end
 
 function Pause:resumeGame()
     if saveData then
-        player.x = saveData.player_x
-        player.y = saveData.player_y
-        player.vx = saveData.player_vx
-        player.vy = saveData.player_vy
+        player = saveData.player
         player.road_vy = saveData.road_vy
         player.road_pos = saveData.road_pos
         player.distance = saveData.distance
-        player.car = saveData.carPlayer
         car = saveData.car
     end
     sm.switch("game")
