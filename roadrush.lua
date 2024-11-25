@@ -81,7 +81,9 @@ CarConfig = {
         w = 16,
         h = 28,
         ox = 0,
-        oy = 0
+        oy = 0,
+        speedX =0.14,
+        speedY = 2
     }, -- Deportivo amarillo / Chances 2/79
     [258] = {
         sprW = 2,
@@ -89,7 +91,9 @@ CarConfig = {
         w = 16,
         h = 28,
         ox = 0,
-        oy = 0
+        oy = 0,
+        speedX =0.14,
+        speedY = 2
     }, -- Deportivo Blanco / Chances 2/79
     [260] = {
         sprW = 2,
@@ -97,7 +101,9 @@ CarConfig = {
         w = 16,
         h = 28,
         ox = 0,
-        oy = 0
+        oy = 0,
+        speedX =0.12,
+        speedY = 1
     }, -- Rapidin rojo / Chances 15/79
     [262] = {
         sprW = 2,
@@ -105,7 +111,9 @@ CarConfig = {
         w = 16,
         h = 28,
         ox = 0,
-        oy = 0
+        oy = 0,
+        speedX =0.12,
+        speedY = 1
     }, -- Rapidin blanco / Chances 15/79
     [264] = {
         sprW = 2,
@@ -113,7 +121,9 @@ CarConfig = {
         w = 16,
         h = 29,
         ox = 0,
-        oy = 0
+        oy = 0,
+        speedX =0.07,
+        speedY = 0.6
     }, -- Común rojo / Chances 12/79
     [266] = {
         sprW = 2,
@@ -121,7 +131,9 @@ CarConfig = {
         w = 16,
         h = 29,
         ox = 0,
-        oy = 0
+        oy = 0,
+        speedX =0.07,
+        speedY = 0.6
     }, -- Común azul / Chances 12/79
     [268] = {
         sprW = 2,
@@ -129,7 +141,9 @@ CarConfig = {
         w = 16,
         h = 24,
         ox = 0,
-        oy = 0
+        oy = 0,
+        speedX =0.06,
+        speedY = 0.6
     }, -- Auto croto rojo / Chances 12/79
     [270] = {
         sprW = 2,
@@ -137,7 +151,9 @@ CarConfig = {
         w = 16,
         h = 24,
         ox = 0,
-        oy = 0
+        oy = 0,
+        speedX =0.06,
+        speedY = 0.6
     }, -- Auto croto azul / Chances 12/79
     [320] = {
         sprW = 2,
@@ -145,7 +161,9 @@ CarConfig = {
         w = 10,
         h = 28,
         ox = 3,
-        oy = 1
+        oy = 1,
+        speedX = 0.1,
+        speedY = 1.5
     }, -- La sanchez del GTA SA / Chances 2/79
     [322] = {
         sprW = 2,
@@ -153,7 +171,9 @@ CarConfig = {
         w = 12,
         h = 29,
         ox = 2,
-        oy = 2
+        oy = 2,
+        speedX = 0.06,
+        speedY = 1
     }, -- La moto del enano de Ratatouille / Chances 4/79
     [324] = {
         sprW = 2,
@@ -161,7 +181,9 @@ CarConfig = {
         w = 16,
         h = 65,
         ox = 0,
-        oy = 0
+        oy = 0,
+        speedX = 0.04,
+        speedY = 0.3
     }, -- Camión 1 / Chances 6/79
     [326] = {
         sprW = 2,
@@ -169,7 +191,9 @@ CarConfig = {
         w = 16,
         h = 65,
         ox = 0,
-        oy = 0
+        oy = 0,
+        speedX = 0.04,
+        speedY = 0.3
     } -- Camión 2 / Chances 6/79
     -- [328] = {sprW = 8, sprH = 8, w = 64, h = 64, ow = 0, oh = 0}, -- Tanque / Chances 1/79
 }
@@ -180,8 +204,13 @@ local CarSprites = {256, 258, 260, 262, 260, 262, 264, 266, 264, 266, 264, 266, 
                     270, 268, 270, 268, 270, 268, 270, 268, 270, 320, 322, 322, 324, 326, 324, 326, 324, 326 -- 328
 }
 
-function canGenerateCar()
-    return math.random() > 0.5
+function canGenerateCar(carril)
+    if (carril == "izq") then
+        return math.random() > 0.5
+    else if (carril == "der") then
+            return math.random() > 0.9
+        end
+    end
 end
 
 function getCarSprite()
@@ -195,9 +224,10 @@ Car = Entity:new{
     sprH = 4,
     w = 2,
     h = 4,
-    sprh = 24,
     spr = 326,
-    direction = 0
+    direction = -1,
+    speedX = 0.5,
+    speedY = 0.5,
 }
 
 function Car:draw()
@@ -205,8 +235,14 @@ function Car:draw()
     -- rectb(self.x + self.ox, self.y + self.oy, self.w, self.h, 12)
 end
 
-function Car:update(dt)
-    self.y = self.y - (self.stage.road_vy * dt) / 2
+function Car:update(dt, direction)
+    --if (direction == 1) then
+        self.y = self.y - (self.stage.road_vy * dt) / 2
+    --[[ else 
+        if (direction == -1) then
+        self.y = self.y - (self.stage.road_vy * dt) / 2
+        end ]]
+    --end
     self.pos = self.stage.road_pos
 end
 
@@ -227,7 +263,8 @@ Player = Entity:new{
     distance = 0,
     spr = 0,
     car = nil,
-    landing = false
+    landing = false,
+    direction = 1
 }
 
 function Player:draw()
@@ -263,7 +300,7 @@ CarPlayer = Entity:new{
     spr = 258,
     sprW = 2,
     sprH = 4,
-    speedX = .05,
+    speedX = .14,
     direction = 1
 }
 
@@ -487,7 +524,7 @@ function Game:init()
             speed = 0.05,
             road_pos = 0,
             spr = 256,
-            direction = 0
+            direction = 1
         }
     end
     self.car = saveData.car
@@ -552,7 +589,7 @@ function Game:update(dt)
                     ox = e.ox,
                     oy = e.oy,
                     h = e.h,
-                    speedX = .05,
+                    speedX = e.speedX,
                     direction = 1,
                     sprW = e.sprW,
                     sprH = e.sprH
@@ -646,7 +683,7 @@ function Game:update_entities(dt)
     local entity_count_ = 0
     for i = 1, #self.entities do
         local e = self.entities[i]
-        e:update(dt)
+        e:update(dt, e.direction)
         if e.alive and e.y < 150 then
             table.insert(entities_, e)
         else
@@ -682,7 +719,6 @@ function Game:draw_road()
 end
 
 function Game:update_road(dt)
-
     if self.state == "game" then
         self.road_vy = self.road_vy - 0.000001 * dt
     end
@@ -702,18 +738,23 @@ function Game:update_road(dt)
         if -self.road_pos > self.last_obstacle then
             local p = {42, 64, 86}
             local i = math.random(1, #p)
-            spawnNewCar(self, 59, p, i)
-            spawnNewCar(self, 86, p, i)
-
+            spawnNewCar(self, 59, p, i, -1)
+            spawnNewCar(self, 86, p, i, -1)
+            spawnNewCar(self, 138, p, i, 1)
+            spawnNewCar(self, 166, p, i, 1)
             -- self.last_obstacle = -1 * self.road_pos + self.next_obstacle
         end
     end
 end
 
-function spawnNewCar(self, carril, p, i)
+function spawnNewCar(self, carril, p, i, carDirection)
+    local nomCarril = "izq"
+    if (carril == 138 or carril == 166) then
+        nomCarril = "der"
+    end
     local selectedSprite = getCarSprite()
     local posibleColition = findColition(self, carril, selectedSprite)
-    if (canGenerateCar() and frame % 15 == 0 and not posibleColition) then
+    if (canGenerateCar(nomCarril) and frame % 15 == 0 and not posibleColition) then
         local spriteConfig = CarConfig[selectedSprite]
         table.insert(self.entities, Car:new{
             pos = -1 * self.road_pos,
@@ -728,7 +769,9 @@ function spawnNewCar(self, carril, p, i)
             ox = spriteConfig.ox,
             oy = spriteConfig.oy,
             name = "car",
-            direction = -1
+            speedX = spriteConfig.speedX,
+            --speedY = spriteConfig.speedY,
+            direction = carDirection
         })
         self.entity_count = self.entity_count + 1
         self.car = true
@@ -1073,10 +1116,10 @@ end
 -- 029:fffff232eeeeff32dddddee4ddddde44dddde4f233332f2233333f3233333f32
 -- 030:898fffff89ffeeeeaeedddddaaeddddd8faedddd88f8999989f9999989f99999
 -- 031:fffff898eeeeff98dddddeeadddddeaaddddeaf899998f8899999f9899999f98
--- 032:07d7666607d7666607f7755507e77fff0cd67e0e0ce77dee05677e0d05677fdd
--- 033:66667d7066667d7055577f70fff77e70e0e76dc0eed77ec0d0e77650ddf77650
--- 034:0cdcbbbb0cdcbbbb0cfccddd0ceccfff0cdbce0e0ceccdee0dbcce0d0dbccfdd
--- 035:bbbbcdc0bbbbcdc0dddccfc0fffccec0e0ecbdc0eedccec0d0eccbd0ddfccbd0
+-- 032:07d7666607d7666607f7755507e77fff0cd67efe0ce77dee05677efd05677fdd
+-- 033:66667d7066667d7055577f70fff77e70efe76dc0eed77ec0dfe77650ddf77650
+-- 034:0cdcbbbb0cdcbbbb0cfccddd0ceccfff0cdbcefe0ceccdee0dbccefd0dbccfdd
+-- 035:bbbbcdc0bbbbcdc0dddccfc0fffccec0efecbdc0eedccec0dfeccbd0ddfccbd0
 -- 036:04ed1433042d1433022e3433034d3433013f343301441eee0142feed0411fedd
 -- 037:3341de403341d2403343e2203343d4303343f310eee14410deef2410ddef1140
 -- 038:0dedebcc0dbdebcc0bbecbcc0cbdcbcc0ecfcbcc0ebbbbee0ebffeed0beefedd
@@ -1089,10 +1132,10 @@ end
 -- 045:44343f43eeeee343dddde33222223332fffd331efffe212033321200eeee0000
 -- 046:9af9a9aa9a9eeeee899edddd89998888e199dfff0818efff008189990000eeee
 -- 047:aa9a9fa9eeeee9a9dddde99888889998fffd991efffe818099981800eeee0000
--- 048:05677d0c07677ded07577eed07777ddd055770000fdd5fff00fdfeee0000fddd
--- 049:c0d77650ded77670dee77570ddd7777000077550fff5ddf0eeefdf00dddf0000
--- 050:0dbccd0c0cbccded0cdcceed0ccccddd0ddcc0000feebfff00fefeee0000fddd
--- 051:c0dccbd0dedccbc0deeccdc0dddcccc0000ccdd0fffbeef0eeefef00dddf0000
+-- 048:05677dfc07677ded07577eed07777ddd05577fff0fdd5fff00fdfeee0000fddd
+-- 049:cfd77650ded77670dee77570ddd77770fff77550fff5ddf0eeefdf00dddf0000
+-- 050:0dbccdfc0cbccded0cdcceed0ccccddd0ddccfff0feebfff00fefeee0000fddd
+-- 051:cfdccbd0dedccbc0deeccdc0dddcccc0fffccdd0fffbeef0eeefef00dddf0000
 -- 052:e322fedde3224edde3332edde34334ede1234f4302111141003134110000deef
 -- 053:ddef223edde4223edde2333ede43343e34f4321e1411112011431300feed0000
 -- 054:ecfffeddecffbeddecccfeddecbccbedeefcbfbd0feeeebe00cecbee0000deef
