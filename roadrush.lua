@@ -4,8 +4,7 @@
 -- version: 0.1
 -- script:  lua
 scroll_y = 0
-
-frame = 0
+local frame = 0
 
 local saveData = {
     car = false
@@ -25,7 +24,8 @@ player = {
     vy = 0,
     road_vy = -0.15,
     road_pos = 0,
-    distance = 0
+    distance = 0,
+    car = nil
 }
 
 settings = {
@@ -75,32 +75,142 @@ function Entity:update(dt)
 end
 
 CarConfig = {
-    [256] = {sprW = 2, sprH = 4, w = 16, h = 28, ox = 0, oy = 0}, -- Deportivo amarillo / Chances 2/79
-    [258] = {sprW = 2, sprH = 4, w = 16, h = 28, ox = 0, oy = 0}, -- Deportivo Blanco / Chances 2/79
-    [260] = {sprW = 2, sprH = 4, w = 16, h = 28, ox = 0, oy = 0}, -- Rapidin rojo / Chances 15/79
-    [262] = {sprW = 2, sprH = 4, w = 16, h = 28, ox = 0, oy = 0}, -- Rapidin blanco / Chances 15/79
-    [264] = {sprW = 2, sprH = 4, w = 16, h = 29, ox = 0, oy = 0}, -- Común rojo / Chances 12/79
-    [266] = {sprW = 2, sprH = 4, w = 16, h = 29, ox = 0, oy = 0}, -- Común azul / Chances 12/79
-    [268] = {sprW = 2, sprH = 3, w = 16, h = 24, ox = 0, oy = 0}, -- Auto croto rojo / Chances 12/79
-    [270] = {sprW = 2, sprH = 3, w = 16, h = 24, ox = 0, oy = 0}, -- Auto croto azul / Chances 12/79
-    [320] = {sprW = 2, sprH = 4, w = 10, h = 28, ox = 3, oy = 1}, -- La sanchez del GTA SA / Chances 2/79
-    [322] = {sprW = 2, sprH = 4, w = 12, h = 29, ox = 2, oy = 0}, -- La moto del enano de Ratatouille / Chances 4/79
-    [324] = {sprW = 2, sprH = 8, w = 16, h = 68, ox = 0, oy = 0}, -- Camión 1 / Chances 6/79
-    [326] = {sprW = 2, sprH = 8, w = 16, h = 68, ox = 0, oy = 0}, -- Camión 2 / Chances 6/79
-    --[328] = {sprW = 8, sprH = 8, w = 64, h = 64, ow = 0, oh = 0}, -- Tanque / Chances 1/79
+    [256] = {
+        sprW = 2,
+        sprH = 4,
+        w = 16,
+        h = 28,
+        ox = 0,
+        oy = 0,
+        speedX =0.14,
+        speedY = 2
+    }, -- Deportivo amarillo / Chances 2/79
+    [258] = {
+        sprW = 2,
+        sprH = 4,
+        w = 16,
+        h = 28,
+        ox = 0,
+        oy = 0,
+        speedX =0.14,
+        speedY = 2
+    }, -- Deportivo Blanco / Chances 2/79
+    [260] = {
+        sprW = 2,
+        sprH = 4,
+        w = 16,
+        h = 28,
+        ox = 0,
+        oy = 0,
+        speedX =0.12,
+        speedY = 1
+    }, -- Rapidin rojo / Chances 15/79
+    [262] = {
+        sprW = 2,
+        sprH = 4,
+        w = 16,
+        h = 28,
+        ox = 0,
+        oy = 0,
+        speedX =0.12,
+        speedY = 1
+    }, -- Rapidin blanco / Chances 15/79
+    [264] = {
+        sprW = 2,
+        sprH = 4,
+        w = 16,
+        h = 29,
+        ox = 0,
+        oy = 0,
+        speedX =0.07,
+        speedY = 0.6
+    }, -- Común rojo / Chances 12/79
+    [266] = {
+        sprW = 2,
+        sprH = 4,
+        w = 16,
+        h = 29,
+        ox = 0,
+        oy = 0,
+        speedX =0.07,
+        speedY = 0.6
+    }, -- Común azul / Chances 12/79
+    [268] = {
+        sprW = 2,
+        sprH = 3,
+        w = 16,
+        h = 24,
+        ox = 0,
+        oy = 0,
+        speedX =0.06,
+        speedY = 0.6
+    }, -- Auto croto rojo / Chances 12/79
+    [270] = {
+        sprW = 2,
+        sprH = 3,
+        w = 16,
+        h = 24,
+        ox = 0,
+        oy = 0,
+        speedX =0.06,
+        speedY = 0.6
+    }, -- Auto croto azul / Chances 12/79
+    [320] = {
+        sprW = 2,
+        sprH = 4,
+        w = 10,
+        h = 28,
+        ox = 3,
+        oy = 1,
+        speedX = 0.1,
+        speedY = 1.5
+    }, -- La sanchez del GTA SA / Chances 2/79
+    [322] = {
+        sprW = 2,
+        sprH = 4,
+        w = 12,
+        h = 29,
+        ox = 2,
+        oy = 2,
+        speedX = 0.06,
+        speedY = 1
+    }, -- La moto del enano de Ratatouille / Chances 4/79
+    [324] = {
+        sprW = 2,
+        sprH = 8,
+        w = 16,
+        h = 65,
+        ox = 0,
+        oy = 0,
+        speedX = 0.04,
+        speedY = 0.3
+    }, -- Camión 1 / Chances 6/79
+    [326] = {
+        sprW = 2,
+        sprH = 8,
+        w = 16,
+        h = 65,
+        ox = 0,
+        oy = 0,
+        speedX = 0.04,
+        speedY = 0.3
+    } -- Camión 2 / Chances 6/79
+    -- [328] = {sprW = 8, sprH = 8, w = 64, h = 64, ow = 0, oh = 0}, -- Tanque / Chances 1/79
 }
 
-
-local CarSprites = {
-    256, 258, 260, 262, 260, 262, 264, 266, 264, 266, 264, 266, 264, 266, 264, 266, 264, 266, 268, 270, 268, 270,
-    268, 270, 268, 270, 268, 270, 268, 270, 320, 322, 322, 324, 326, 324, 326, 324, 326, 256, 258, 260, 262,
-    260, 262, 264, 266, 264, 266, 264, 266, 264, 266, 264, 266, 264, 266, 268, 270, 268, 270, 268, 270, 268, 270,
-    268, 270, 268, 270, 320, 322, 322, 324, 326, 324, 326, 324, 326,
-    --328
+local CarSprites = {256, 258, 260, 262, 260, 262, 264, 266, 264, 266, 264, 266, 264, 266, 264, 266, 264, 266, 268, 270,
+                    268, 270, 268, 270, 268, 270, 268, 270, 268, 270, 320, 322, 322, 324, 326, 324, 326, 324, 326, 256,
+                    258, 260, 262, 260, 262, 264, 266, 264, 266, 264, 266, 264, 266, 264, 266, 264, 266, 268, 270, 268,
+                    270, 268, 270, 268, 270, 268, 270, 268, 270, 320, 322, 322, 324, 326, 324, 326, 324, 326 -- 328
 }
 
-function canGenerateCar ()
-	return math.random()>0.5
+function canGenerateCar(carril)
+    if (carril == "izq") then
+        return math.random() > 0.5
+    else if (carril == "der") then
+            return math.random() > 0.9
+        end
+    end
 end
 
 function getCarSprite()
@@ -114,9 +224,10 @@ Car = Entity:new{
     sprH = 4,
     w = 2,
     h = 4,
-    sprh = 24,
     spr = 326,
-    direction = 0
+    direction = -1,
+    speedX = 0.5,
+    speedY = 0.5,
 }
 
 function Car:draw()
@@ -124,59 +235,129 @@ function Car:draw()
     --rectb(self.x + self.ox, self.y + self.oy, self.w, self.h, 12)
 end
 
-function Car:update(dt)
-    self.y = self.y - (self.stage.road_vy * dt) / 2
+function Car:update(dt, direction)
+    if (direction == 1) then
+        self.y = self.y - (self.stage.road_vy * dt) / 2
+    else 
+        if (direction == -1) then
+        self.y = self.y - (self.stage.road_vy * dt) * 0.8
+        end
+    end
     self.pos = self.stage.road_pos
 end
 
 Player = Entity:new{
     type = "player",
-    x = 138,
-    y = 115,
-    vx = 0,
-    vy = 0,
-    ox = 1,
-    oy = 2,
-    w = 14,
-    h = 28,
-    speedX = .05,
+    x = 0,
+    y = 0,
+    w = 16,
+    h = 10,
+    jumpx = 0,
+    jumpy = 0,
+    jumping = false,
+    jump_height = 12,
+    jump_time = 0,
+    jump_finish = false,
     road_vy = -0.15,
     road_pos = 0,
-    distance = 0
+    distance = 0,
+    spr = 0,
+    car = nil,
+    landing = false,
+    direction = 1
 }
 
 function Player:draw()
-    spr(256, self.x, self.y, -1, 1, 0, 0, 2, 4)
-    --rectb(self.x + self.ox, self.y + self.oy, self.w, self.h, 12)
+    if self.jumping and not self.landing then
+        self.x = self.jumpx
+        self.y = self.jumpy
+        self.jump_finish = true
+        self.jumpy = self.jumpy - 0.5
+        spr(462, self.jumpx + 3, self.jumpy, 0, 1, 0, 0, 1, 2)
+    end
+    -- rectb(self.x + self.ox, self.y + self.oy, self.w, self.h, 12)
 end
 
 function Player:update(dt)
-    if btn(2) then -- left
-        if self.vx >= -1 then
-            self.vx = self.vx - self.speedX
-        end
-    elseif btn(3) then -- right
-        if self.vx <= 1 then
-            self.vx = self.vx + self.speedX
-        end
-    else -- stop
-        if self.vx > 0 then
-            self.vx = self.vx - .05
-            if self.vx < 0 then
-                self.vx = 0
-            end
-        elseif self.vx < 0 then
-            self.vx = self.vx + .05
-            if self.vx > 0 then
-                self.vx = 0
-            end
+    if not self.jumping then
+        if self.car then
+            self.jumpy = self.car.y
+            self.jumpx = self.car.x
         end
     end
+end
 
+CarPlayer = Entity:new{
+    type = "carPlayer",
+    pos = 0,
+    x = 0,
+    y = 0,
+    ox = 1,
+    oy = 2,
+    w = 13,
+    h = 28,
+    sprh = 24,
+    spr = 258,
+    sprW = 2,
+    sprH = 4,
+    speedX = .14,
+    direction = 1
+}
+
+function CarPlayer:draw()
+    spr(self.spr, self.x, self.y, -1, 1, self.direction, 0, self.sprW, self.sprH)
+    --rectb(self.x + self.ox, self.y + self.oy, self.w, self.h, 15)
+end
+
+function CarPlayer:update(dt)
+    if (self.type == "carPlayer") then
+        if (self.y > 103) then
+            self.y = self.y - 1.5
+        elseif (self.y < 103) then
+            self.y = self.y + 1.5
+        end
+        if (self.y > 102 and self.y < 104) then
+            self.y = 103
+        end
+        if btn(2) then -- left
+            if self.vx >= -1 then
+                self.vx = self.vx - self.speedX
+            end
+        elseif btn(3) then -- right
+            if self.vx <= 1 then
+                self.vx = self.vx + self.speedX
+            end
+        else -- stop
+            if self.vx > 0 then
+                self.vx = self.vx - .05
+                if self.vx < 0 then
+                    self.vx = 0
+                end
+            elseif self.vx < 0 then
+                self.vx = self.vx + .05
+                if self.vx > 0 then
+                    self.vx = 0
+                end
+            end
+        end
+    else
+        self.vx = 0
+        self.vy = 1.5
+    end
+
+    self.y = self.y + self.vy
     self.x = self.x + self.vx
     self:cartsLimits()
 end
 
+function CarPlayer:cartsLimits()
+    if self.x < 49 then
+        self.x = 49
+    end
+    if self.x > 175 then
+        self.x = 175
+    end
+end
 Stage = {}
 
 function Stage:new(o)
@@ -210,68 +391,11 @@ function Positioner(total, initial)
     }
 end
 
-function cartMoves()
-
-    if btn(0) then -- up
-        -- if player.vy >= -3 then
-        --    player.vy = player.vy - player.speedY
-        -- end
-    elseif btn(1) then -- down
-        -- if player.vy <= 1 then
-        --    player.vy = player.vy + player.speedY
-        -- end
-    else -- stop
-        if player.vy > 0 then
-            player.vy = player.vy - .05
-            if player.vy < 0 then
-                player.vy = 0
-            end
-        elseif player.vy < 0 then
-            player.vy = player.vy + .05
-            if player.vy > 0 then
-                player.vy = 0
-            end
-        end
-    end
-
-    player.y = player.y + player.vy
-
-    if btn(2) then -- left
-        if player.vx >= -1 then
-            player.vx = player.vx - player.speedX
-        end
-    elseif btn(3) then -- right
-        if player.vx <= 1 then
-            player.vx = player.vx + player.speedX
-        end
-    else -- stop
-        if player.vx > 0 then
-            player.vx = player.vx - .05
-            if player.vx < 0 then
-                player.vx = 0
-            end
-        elseif player.vx < 0 then
-            player.vx = player.vx + .05
-            if player.vx > 0 then
-                player.vx = 0
-            end
-        end
-    end
-
-    player.x = player.x + player.vx
-end
-
 function promedio(min, max, min_2, max_2)
     return ((min + max) / 2 + (min_2 + max_2) / 2) / 2
 end
 
 function Player:cartsLimits()
-    if self.y < 0 then
-        self.y = 0
-    end
-    if self.y > 120 then
-        self.y = 120
-    end
     if self.x < 49 then
         self.x = 49
     end
@@ -347,6 +471,10 @@ function Menu:update(dt)
     print("Settings", 90, y + 10, 4)
     spr(143, 80, (self.p.pos() - 1) * 10 + y - 2)
 
+    if frame < 30 then
+        print("Press X or Z to continue", 55, y + 50, 4)
+    end
+
     if btnp(0) then
         self.p.sub()
     elseif btnp(1) then
@@ -373,7 +501,9 @@ Game = Stage:new{
     car = false,
     poli = false,
     tanke = false,
-    explosion = false
+    explosion = false,
+    jumpAnimation = false,
+    timer_jump = 30
 }
 
 function Game:init()
@@ -382,11 +512,28 @@ function Game:init()
         y = player.y,
         vx = player.vx,
         vy = player.vy,
-        speedX = player.speedX
+        speedX = player.speedX,
+        spr = 256,
+        car = player.car
     }
+    if (self.player.car == nil) then
+        self.player.car = CarPlayer:new{
+            x = player.x,
+            y = player.y,
+            vx = player.vx,
+            vy = player.vy,
+            w = 14,
+            h = 28,
+            speed = 0.05,
+            road_pos = 0,
+            spr = 256,
+            direction = 1
+        }
+    end
     self.car = saveData.car
     self.entities = saveEntities_
-    self.entity_count = 0
+    self.entity_count = #saveEntities_
+    self:add_entity(self.player.car)
     self:add_entity(self.player)
     self.road_vy = player.road_vy
     self.road_pos = player.road_pos
@@ -407,23 +554,58 @@ function Game:update(dt)
         return
     end
 
-    self:draw_road()
-    self:draw_entities()
-
-    if self.state == "game over" then
-        vbank(1)
-        print("GAME OVER", 64, 60, 3, false, 2)
-        vbank(0)
-    else
-        self:update_entities(dt)
+    if keyp(48) and not self.jumpAnimation and not self.explosion then
+        self.player.landing = false
+        self.player.jumping = true
+        self.jumpAnimation = true
+        self.timer_jump = 45
+        self.player.car.type = 'exCarPlayer'
+        self.player.car.vy = 1.5
+        self.player.car = nil
     end
 
+    self:draw_road()
+    self:draw_entities()
     self:update_road(dt)
-    -- map(0, scroll_y // 8, 30, 17, 0, (scroll_y % 8) - 8)
-    -- map(0, (scroll_y // 8) + 1, 30, 17, 0, (scroll_y % 8) + 8)
+
+    if (self.jumpAnimation and self.timer_jump <= 0) then
+        self.player.jump_finish = false
+        self.player.jumping = false
+        self.player.alive = false
+    end
+
     for i, e in pairs(self.entities) do
         if self.player:overlap(e) then
-            if e.type == "enemy" then
+            if e.type == "enemy" and self.player.jumping and not self.player.landing then
+                self.player.landing = true
+                self.player.jumping = false
+                self.jumpAnimation = false
+                self.player.car = CarPlayer:new{
+                    x = e.x,
+                    y = e.y,
+                    vx = 0,
+                    vy = 0,
+                    w = e.w,
+                    spr = e.spr,
+                    type = "carPlayer",
+                    pos = 0,
+                    ox = e.ox,
+                    oy = e.oy,
+                    h = e.h,
+                    speedX = e.speedX,
+                    direction = 1,
+                    sprW = e.sprW,
+                    sprH = e.sprH
+                }
+                self:add_entity(self.player.car)
+                e.alive = false
+                break
+            end
+        end
+    end
+    for i, e in pairs(self.entities) do
+        if self.player.car ~= nil and self.player.car:overlap(e) then
+            if e.type == "enemy" and e.alive then
                 self.state = "game over"
                 if self.explosion == false or sound_playing then
                     sfx(8, "F-3", -1, 2, 15, 8)
@@ -438,21 +620,50 @@ function Game:update(dt)
                     end
                 end
                 vbank(1)
-                local x = promedio(self.player.x, self.player.x + self.player.w, e.x, e.x + e.w) - 10
-                local y = promedio(self.player.y, self.player.y + self.player.h, e.y, e.y + e.h) - 10
+                local x = promedio(self.player.car.x, self.player.car.x + self.player.car.w, e.x, e.x + e.w) - 10
+                local y = promedio(self.player.car.y, self.player.car.y + self.player.car.h, e.y, e.y + e.h) - 10
                 spr(384, x, y, 0, 1, -1, 0, 3, 3)
                 vbank(0)
-                -- spr(384, e.x, e.y, 0, 1, 0, 0, 2, 2)
             end
         end
     end
 
+    if self.player.alive == false then
+        self.state = "game over"
+        vbank(1)
+        spr(463, self.player.x + 3, self.player.y, 0, 1, 0, 0, 1, 2)
+        vbank(0)
+    end
+
+    if self.state == "game over" then
+        vbank(1)
+        print("GAME OVER", 64, 60, 3, false, 2)
+        if frame < 30 then
+            print("Press X or Z to continue", 55, 104, 15)
+        end
+        vbank(0)
+    else
+        self:update_entities(dt)
+    end
+
     if self.state == "game over" then
         if btn(4) or btn(5) then
+            if saveData then
+                player.x = 138
+                player.y = 103
+                player.vx = 0
+                player.vy = 0
+                player.road_vy = -0.15
+                player.road_pos = 0
+                player.distance = 0
+                player.car = nil
+                car = false
+            end
             saveEntities_ = {}
             sm.switch("menu")
         end
     end
+    self.timer_jump = self.timer_jump - 1
 end
 
 function Game:draw_entities()
@@ -475,17 +686,16 @@ function Game:update_entities(dt)
     local entity_count_ = 0
     for i = 1, #self.entities do
         local e = self.entities[i]
-        e:update(dt)
-        if e.alive and e.y < 220 then
+        e:update(dt, e.direction)
+        if e.alive and e.y < 150 then
             table.insert(entities_, e)
-            entity_count_ = entity_count_ + 1
         else
             if e.name == 'car' then
                 self.car = false
             end
         end
     end
-    self.entity_count = entity_count_
+    self.entity_count = #entities_
     self.entities = entities_
 end
 
@@ -506,19 +716,18 @@ function Game:draw_road()
     print("high", 8, 2, 6)
     print(string.format("%06.f m", settings.high_score), 8, 10, 4, true)
 
-    if key(50) then
+    if key(50) and self.state == "game" then
         self:pauseGame()
     end
 end
 
 function Game:update_road(dt)
-
     if self.state == "game" then
-        self.road_vy = self.road_vy - 0.000001 * dt
+        self.road_vy = self.road_vy - 0.000001 * dt * 0.7
     end
 
     if self.state ~= "game over" then
-        self.road_pos = self.road_pos + self.road_vy * dt
+        self.road_pos = self.road_pos + self.road_vy * dt * 0.7
     end
 
     if self.state == "game" then
@@ -532,18 +741,23 @@ function Game:update_road(dt)
         if -self.road_pos > self.last_obstacle then
             local p = {42, 64, 86}
             local i = math.random(1, #p)
-            spawnNewCar(self, 59, p, i)
-            spawnNewCar(self, 86, p, i)
-
-            --self.last_obstacle = -1 * self.road_pos + self.next_obstacle
+            spawnNewCar(self, 59, p, i, -1)
+            spawnNewCar(self, 86, p, i, -1)
+            spawnNewCar(self, 138, p, i, 1)
+            spawnNewCar(self, 166, p, i, 1)
+            -- self.last_obstacle = -1 * self.road_pos + self.next_obstacle
         end
     end
 end
 
-function spawnNewCar(self, carril, p, i)
+function spawnNewCar(self, carril, p, i, carDirection)
+    local nomCarril = "izq"
+    if (carril == 138 or carril == 166) then
+        nomCarril = "der"
+    end
     local selectedSprite = getCarSprite()
     local posibleColition = findColition(self, carril, selectedSprite)
-    if (canGenerateCar() and frame%15==0 and not posibleColition) then
+    if (canGenerateCar(nomCarril) and frame % 15 == 0 and not posibleColition) then
         local spriteConfig = CarConfig[selectedSprite]
         table.insert(self.entities, Car:new{
             pos = -1 * self.road_pos,
@@ -558,7 +772,9 @@ function spawnNewCar(self, carril, p, i)
             ox = spriteConfig.ox,
             oy = spriteConfig.oy,
             name = "car",
-            direction = -1
+            speedX = spriteConfig.speedX,
+            --speedY = spriteConfig.speedY,
+            direction = carDirection
         })
         self.entity_count = self.entity_count + 1
         self.car = true
@@ -591,19 +807,21 @@ end
     return false
 end ]]
 
-
 function Game:pauseGame()
+    saveEntities_ = {}
     saveData = {
-        player_x = self.player.x,
-        player_y = self.player.y,
-        player_vx = self.player.vx,
-        player_vy = self.player.vy,
+        player = self.player,
         road_vy = self.road_vy,
         road_pos = self.road_pos,
         distance = self.distance,
         car = self.car
     }
-    saveEntities_ = self.entities
+    for i = 1, #self.entities do
+        local e = self.entities[i]
+        if e.type ~= 'carPlayer' and e.type ~= 'player' and e.type ~= 'exCarPlayer' then
+            table.insert(saveEntities_, e)
+        end
+    end
     sm.switch("pause")
 end
 
@@ -616,13 +834,17 @@ function Pause:init()
 end
 
 function Pause:update(dt)
-    cls() 
+    cls()
     map(180, 119, 30, 17)
     local y = 54
     print("Continue", 90, y, 4)
     print("Restart", 90, y + 10, 4)
     print("Quit", 90, y + 20, 4)
     spr(143, 80, (self.p.pos() - 1) * 10 + y - 2)
+
+    if frame < 30 then
+        print("Press X or Z to continue", 55, 104, 4)
+    end
 
     if btnp(0) then
         self.p.sub()
@@ -636,15 +858,12 @@ function Pause:update(dt)
         elseif self.p.pos() == 3 then
             self:quitGame()
         end
-    end 
+    end
 end
 
 function Pause:resumeGame()
     if saveData then
-        player.x = saveData.player_x
-        player.y = saveData.player_y
-        player.vx = saveData.player_vx
-        player.vy = saveData.player_vy
+        player = saveData.player
         player.road_vy = saveData.road_vy
         player.road_pos = saveData.road_pos
         player.distance = saveData.distance
@@ -656,12 +875,13 @@ end
 function Pause:restartGame()
     if saveData then
         player.x = 138
-        player.y = 115
+        player.y = 103
         player.vx = 0
         player.vy = 0
         player.road_vy = -0.15
         player.road_pos = 0
         player.distance = 0
+        player.car = nil
         car = false
     end
     saveEntities_ = {}
@@ -671,12 +891,14 @@ end
 function Pause:quitGame()
     if saveData then
         player.x = 138
-        player.y = 115
+        player.y = 103
         player.vx = 0
         player.vy = 0
         player.road_vy = -0.15
         player.road_pos = 0
         player.distance = 0
+        player.car = nil
+        car = false
     end
     sm.switch("menu")
 end
@@ -693,7 +915,7 @@ function TIC()
     cls()
     vbank(0)
     local actual_t = time()
-    frame = frame + 1
+    frame = (frame + 1) % 60
     local dt = actual_t - last_t
 
     scroll_y = scroll_y + 0.6
@@ -880,7 +1102,7 @@ end
 -- 012:00000eee000e43330e433433e663433326643333233233332323333323333333
 -- 013:eee000003334e000334334e03334366e33334662333323323333323233333332
 -- 014:00000eee000ea9990ea99a99e669a999866a9999899899998989999989999999
--- 015:eee00000999ae00099a99ae0999a96609999a66099998990999998909999999e
+-- 015:eee00000999ae00099a99ae0999a966e9999a668999989989999989899999998
 -- 016:07fedddd05dedddd0f6eddddf7fedddd07eefddd07f5677707d5777707d57777
 -- 017:ddddef70dddded50dddde6f0ddddef7fdddfee7077765f7077775d7077775d70
 -- 018:0cfedddd0dbedddd0fbeddddfcfedddd0ceefddd0cfdbccc0cddcccc0cddcccc
@@ -896,11 +1118,11 @@ end
 -- 028:232fffff23ffeeee4eeddddd44eddddd2f4edddd22f2333323f3333323f33333
 -- 029:fffff232eeeeff32dddddee4ddddde44dddde4f233332f2233333f3233333f32
 -- 030:898fffff89ffeeeeaeedddddaaeddddd8faedddd88f8999989f9999989f99999
--- 031:fffff898eeeeff98dddddee8dddddea8ddddeaf899998f8899999f9a99999f9a
--- 032:07d7666607d7666607f7755507e77fff0cd67e0e0ce77dee05677e0d05677fdd
--- 033:66667d7066667d7055577f70fff77e70e0e76dc0eed77ec0d0e77650ddf77650
--- 034:0cdcbbbb0cdcbbbb0cfccddd0ceccfff0cdbce0e0ceccdee0dbcce0d0dbccfdd
--- 035:bbbbcdc0bbbbcdc0dddccfc0fffccec0e0ecbdc0eedccec0d0eccbd0ddfccbd0
+-- 031:fffff898eeeeff98dddddeeadddddeaaddddeaf899998f8899999f9899999f98
+-- 032:07d7666607d7666607f7755507e77fff0cd67efe0ce77dee05677efd05677fdd
+-- 033:66667d7066667d7055577f70fff77e70efe76dc0eed77ec0dfe77650ddf77650
+-- 034:0cdcbbbb0cdcbbbb0cfccddd0ceccfff0cdbcefe0ceccdee0dbccefd0dbccfdd
+-- 035:bbbbcdc0bbbbcdc0dddccfc0fffccec0efecbdc0eedccec0dfeccbd0ddfccbd0
 -- 036:04ed1433042d1433022e3433034d3433013f343301441eee0142feed0411fedd
 -- 037:3341de403341d2403343e2203343d4303343f310eee14410deef2410ddef1140
 -- 038:0dedebcc0dbdebcc0bbecbcc0cbdcbcc0ecfcbcc0ebbbbee0ebffeed0beefedd
@@ -912,11 +1134,11 @@ end
 -- 044:34f34344343eeeee233edddd23332222e133dfff0212efff002123330000eeee
 -- 045:44343f43eeeee343dddde33222223332fffd331efffe212033321200eeee0000
 -- 046:9af9a9aa9a9eeeee899edddd89998888e199dfff0818efff008189990000eeee
--- 047:aa9a9fa8eeeee9a8dddde99888889998fffd9919fffe818999981808eeee0008
--- 048:05677d0c07677ded07577eed07777ddd055770000fdd5fff00fdfeee0000fddd
--- 049:c0d77650ded77670dee77570ddd7777000077550fff5ddf0eeefdf00dddf0000
--- 050:0dbccd0c0cbccded0cdcceed0ccccddd0ddcc0000feebfff00fefeee0000fddd
--- 051:c0dccbd0dedccbc0deeccdc0dddcccc0000ccdd0fffbeef0eeefef00dddf0000
+-- 047:aa9a9fa9eeeee9a9dddde99888889998fffd991efffe818099981800eeee0000
+-- 048:05677dfc07677ded07577eed07777ddd05577fff0fdd5fff00fdfeee0000fddd
+-- 049:cfd77650ded77670dee77570ddd77770fff77550fff5ddf0eeefdf00dddf0000
+-- 050:0dbccdfc0cbccded0cdcceed0ccccddd0ddccfff0feebfff00fefeee0000fddd
+-- 051:cfdccbd0dedccbc0deeccdc0dddcccc0fffccdd0fffbeef0eeefef00dddf0000
 -- 052:e322fedde3224edde3332edde34334ede1234f4302111141003134110000deef
 -- 053:ddef223edde4223edde2333ede43343e34f4321e1411112011431300feed0000
 -- 054:ecfffeddecffbeddecccfeddecbccbedeefcbfbd0feeeebe00cecbee0000deef
@@ -925,7 +1147,6 @@ end
 -- 057:ddddef43dddde343dddef33222223332fffd331efffe212033321200eeee0000
 -- 058:9afedddd9a9edddd899feddd89998888e199dfff0818efff008189990000eeee
 -- 059:ddddefa9dddde9a9dddef99888889998fffd991efffe818099981800eeee0000
--- 063:0000000e00000000000000000000000000000000000000000000000000000000
 -- 064:000000000000000d0000000e0000000f000000040000004b0000432d000023de
 -- 065:00000000d0000000e0000000f000000040000000b4000000d2340000ed320000
 -- 066:0000000000000000000000000000000200000021000000110000044300002344
@@ -1047,32 +1268,38 @@ end
 -- 189:adddddbaabbbbbbaabbbbbbaabbbbbbaabbbbbbaabbbbbbaabbbbbba9dddddd9
 -- 190:acbbbbbbacbbbbbbacbbbbbbacbbbbbcaddddddd8abbbbbb8abbbbbbe9aaaaaa
 -- 191:caee0000ca8e0000caee0000ca8e0000da8e0000baef0000ba800000a9000000
+-- 204:04000000940000009fff00000fff900000009400000004000000000000000000
+-- 205:00fff00000fff000004440000a9a9a0004a9a400449a944040a9a04000000000
+-- 206:0400040040fff04040fff040404440400a9a9a0000a9a000009a900000a9a000
+-- 207:0400040040fff04012ff121042444240029a12100129a0112212211010112110
+-- 222:0011100000101000044044000400040005000500000000000000000000000000
+-- 223:0211110000101221111042200402240005000500000000000000000000000000
 -- 240:0003100000003100000003100000003100000031000003100000310000031000
 -- </SPRITES>
 
 -- <MAP>
--- 000:1c0c1c2c3c041448586878889820445414485868788898203008182838281c0c1c2c3c04144858687888982044541448586878889820300818283828ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 001:1d0d1d2d3d051549596979899921455515495969798999213109192939291d0d1d2d3d05154959697989992145551549596979899921310919293929ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 002:1e0e1e2e3e06164a5a6a7a8a9a224656164a5a6a7a8a9a22320a1a2a3a2a1e0e1e2e3e06164a5a6a7a8a9a224656164a5a6a7a8a9a22320a1a2a3a2affffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 003:1f0f1f2f3f07174b5b6b7b8b9b234757174b5b6b7b8b9b23330b1b2b3b2b1f0f1f2f3f07174b5b6b7b8b9b234757174b5b6b7b8b9b23330b1b2b3b2bffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 004:1c0c1c2c3c041448586878889820445414485868788898203008182838281c0c1c2c3c04144858687888982044541448586878889820300818283828ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 005:1d0d1d2d3d051549596979899921455515495969798999213109192939291d0d1d2d3d05154959697989992145551549596979899921310919293929ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 006:1e0e1e2e3e06164a5a6a7a8a9a224656164a5a6a7a8a9a22320a1a2a3a2a1e0e1e2e3e06164a5a6a7a8a9a224656164a5a6a7a8a9a22320a1a2a3a2affffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 007:1f0f1f2f3f07174b5b6b7b8b9b234757174b5b6b7b8b9b23330b1b2b3b2b1f0f1f2f3f07174b5b6b7b8b9b234757174b5b6b7b8b9b23330b1b2b3b2bffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 008:1c0c1c2c3c041448586878889820445414485868788898203008182838281c0c1c2c3c04144858687888982044541448586878889820300818283828ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 009:1d0d1d2d3d051549596979899921455515495969798999213109192939291d0d1d2d3d05154959697989992145551549596979899921310919293929ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 010:1e0e1e2e3e06164a5a6a7a8a9a224656164a5a6a7a8a9a22320a1a2a3a2a1e0e1e2e3e06164a5a6a7a8a9a224656164a5a6a7a8a9a22320a1a2a3a2affffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 011:1f0f1f2f3f07174b5b6b7b8b9b234757174b5b6b7b8b9b23330b1b2b3b2b1f0f1f2f3f07174b5b6b7b8b9b234757174b5b6b7b8b9b23330b1b2b3b2bffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 012:1c0c1c2c3c041448586878889820445414485868788898203008182838281c0c1c2c3c04144858687888982044541448586878889820300818283828ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 013:1d0d1d2d3d051549596979899921455515495969798999213109192939291d0d1d2d3d05154959697989992145551549596979899921310919293929ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 014:1e0e1e2e3e06164a5a6a7a8a9a224656164a5a6a7a8a9a22320a1a2a3a2a1e0e1e2e3e06164a5a6a7a8a9a224656164a5a6a7a8a9a22320a1a2a3a2affffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 015:1f0f1f2f3f07174b5b6b7b8b9b234757174b5b6b7b8b9b23330b1b2b3b2b1f0f1f2f3f07174b5b6b7b8b9b234757174b5b6b7b8b9b23330b1b2b3b2bffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 016:1c0c1c2c3c041448586878889820445414485868788898203008182838281c0c1c2c3c04144858687888982044541448586878889820300818283828ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 017:ffffffffffffffffffffffffffff4555ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 018:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 019:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 020:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 021:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+-- 000:1c0c1c2c3c041449596979899920445414495969798999203008182838281c0c1c2c3c04144959697989992044541449596979899920300818283828ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+-- 001:1d0d1d2d3d05154a5a6a7a8a9a214555154a5a6a7a8a9a213109192939291d0d1d2d3d05154a5a6a7a8a9a214555154a5a6a7a8a9a21310919293929ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+-- 002:1e0e1e2e3e06164b5b6b7b8b9b224656164b5b6b7b8b9b22320a1a2a3a2a1e0e1e2e3e06164b5b6b7b8b9b224656164b5b6b7b8b9b22320a1a2a3a2affffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+-- 003:1f0f1f2f3f07174858697988982347571748586979889823330b1b2b3b2b1f0f1f2f3f07174858697988982347571748586979889823330b1b2b3b2bffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+-- 004:1c0c1c2c3c041449596a7a89992044541449596a7a8999203008182838281c0c1c2c3c041449596a7a89992044541449596a7a899920300818283828ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+-- 005:1d0d1d2d3d05154a5a6b7b8a9a214555154a5a6b7b8a9a213109192939291d0d1d2d3d05154a5a6b7b8a9a214555154a5a6b7b8a9a21310919293929ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+-- 006:1e0e1e2e3e06164b5b69798b9b224656164b5b69798b9b22320a1a2a3a2a1e0e1e2e3e06164b5b69798b9b224656164b5b69798b9b22320a1a2a3a2affffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+-- 007:1f0f1f2f3f071748586a7a88982347571748586a7a889823330b1b2b3b2b1f0f1f2f3f071748586a7a88982347571748586a7a889823330b1b2b3b2bffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+-- 008:1c0c1c2c3c041449596b7b89992044541449596b7b8999203008182838281c0c1c2c3c041449596b7b89992044541449596b7b899920300818283828ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+-- 009:1d0d1d2d3d05154a5a69798a9a214555154a5a69798a9a213109192939291d0d1d2d3d05154a5a69798a9a214555154a5a69798a9a21310919293929ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+-- 010:1e0e1e2e3e06164b5b6a7a8b9b224656164b5b6a7a8b9b22320a1a2a3a2a1e0e1e2e3e06164b5b6a7a8b9b224656164b5b6a7a8b9b22320a1a2a3a2affffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+-- 011:1f0f1f2f3f071748586b7b88982347571748586b7b889823330b1b2b3b2b1f0f1f2f3f071748586b7b88982347571748586b7b889823330b1b2b3b2bffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+-- 012:1c0c1c2c3c041449596979899920445414495969798999203008182838281c0c1c2c3c04144959697989992044541449596979899920300818283828ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+-- 013:1d0d1d2d3d05154a5a6a7a8a9a214555154a5a6a7a8a9a213109192939291d0d1d2d3d05154a5a6a7a8a9a214555154a5a6a7a8a9a21310919293929ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+-- 014:1e0e1e2e3e06164b5b6b7b8b9b224656164b5b6b7b8b9b22320a1a2a3a2a1e0e1e2e3e06164b5b6b7b8b9b224656164b5b6b7b8b9b22320a1a2a3a2affffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+-- 015:1f0f1f2f3f07174858697988982347571748586979889823330b1b2b3b2b1f0f1f2f3f07174858697988982347571748586979889823330b1b2b3b2bffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+-- 016:1c0c1c2c3c041449596a7a89992044541449596a7a8999203008182838281c0c1c2c3c041449596a7a89992044541449596a7a899920300818283828ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+-- 017:ffffffffffffff4a5a6a7a8a9aff4555ff4a5a6a7a8a9affffffffffffffffffffffffffff4a5a6a7a8a9affffffff4a5a6a7a8a9affffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+-- 018:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff4b5b6b7b8b9bffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+-- 019:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff485868788898ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+-- 020:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff495969798999ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+-- 021:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff4a5a6a7a8a9affffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 -- 022:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 -- 023:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 -- 024:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
@@ -1186,7 +1413,7 @@ end
 -- 132:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 -- 133:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 -- 134:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
--- 135:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+-- 135:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff495969798999ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 -- </MAP>
 
 -- <WAVES>
