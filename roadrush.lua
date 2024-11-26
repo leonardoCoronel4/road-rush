@@ -476,6 +476,7 @@ function Menu:update(dt)
     spr(256, 80, (self.p.pos() - 1) * 10 + y - 2)
 
     if frame < 30 then
+        rect(54, y + 48, 132, 9, 0)
         print("Press X or Z to continue", 55, y + 50, 12)
     end
 
@@ -643,6 +644,7 @@ function Game:update(dt)
         vbank(1)
         print("GAME OVER", 64, 60, 3, false, 2)
         if frame < 30 then
+            rect(54, 78 + 25, 132, 8, 12)
             print("Press X or Z to continue", 55, 104, 15)
         end
         vbank(0)
