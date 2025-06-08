@@ -208,7 +208,7 @@ function canGenerateCar(carril)
     if (carril == "izq") then
         return math.random() > 0.5
     else if (carril == "der") then
-            return math.random() > 0.9
+            return math.random() > 0.8
         end
     end
 end
@@ -237,12 +237,34 @@ end
 
 function Car:update(dt, direction)
     if (direction == 1) then
-        self.y = self.y - (self.stage.road_vy * dt) / 2
+        self.y = self.y - (self.stage.road_vy * dt) / 3
     else 
         if (direction == -1) then
-        self.y = self.y - (self.stage.road_vy * dt) * 0.8
+        self.y = self.y - (self.stage.road_vy * dt) * 1.2
         end
     end
+    self.pos = self.stage.road_pos
+end
+
+Obstaculo = Entity:new{
+    type = "enemy",
+    pos = 0,
+    sprW = 1,
+    sprH = 2,
+    w = 8,
+    h = 16,
+    spr = 432,
+    direction = -1,
+    speedX = 0,
+    speedY = 0,
+}
+
+function Obstaculo:draw()
+    spr(self.spr, self.x, self.y, -1, 1, self.direction, 0, self.sprW, self.sprH)
+end
+
+function Obstaculo:update(dt, direction)
+    self.y = self.y - (self.stage.road_vy * dt)
     self.pos = self.stage.road_pos
 end
 
@@ -471,7 +493,7 @@ function Menu:update(dt)
     map(210, 119, 30, 17)
     local y = 78
     print("Start", 90, y, 12)
-    print("Settings", 90, y + 10, 12)
+    --[[ print("Settings", 90, y + 10, 12) ]]
     spr(self.spr, self.x, self.y, -1, 1, self.direction, 0, self.sprW, self.sprH)
     spr(256, 80, (self.p.pos() - 1) * 10 + y - 2)
 
@@ -480,15 +502,27 @@ function Menu:update(dt)
         print("Press X or Z to continue", 55, y + 50, 12)
     end
 
-    if btnp(0) then
+    --[[ if btnp(0) then
         self.p.sub()
     elseif btnp(1) then
         self.p.add()
-    elseif btnp(4) or btnp(5) then
+    else ]]if btnp(4) or btnp(5) then
         if self.p.pos() == 1 then
+            if saveData then
+                player.x = 138
+                player.y = 103
+                player.vx = 0
+                player.vy = 0
+                player.road_vy = -0.15
+                player.road_pos = 0
+                player.distance = 0
+                player.car = nil
+                car = false
+            end
+            saveEntities_ = {}
             sm.switch("game")
-        elseif self.p.pos() == 2 then
-            sm.switch("settings")
+        --[[ elseif self.p.pos() == 2 then
+            sm.switch("settings") ]]
         end
     end 
 end
@@ -610,7 +644,7 @@ function Game:update(dt)
     end
     for i, e in pairs(self.entities) do
         if self.player.car ~= nil and self.player.car:overlap(e) then
-            if e.type == "enemy" and e.alive then
+            if (e.alive and (e.type == "enemy" or e.type == "obstacle")) then
                 self.state = "game over"
                 if self.explosion == false or sound_playing then
                     sfx(8, "F-3", -1, 2, 15, 8)
@@ -729,11 +763,11 @@ end
 
 function Game:update_road(dt)
     if self.state == "game" then
-        self.road_vy = self.road_vy - 0.000001 * dt * 0.7
+        self.road_vy = self.road_vy - 0.000001 * dt
     end
 
     if self.state ~= "game over" then
-        self.road_pos = self.road_pos + self.road_vy * dt * 0.7
+        self.road_pos = self.road_pos + self.road_vy * dt
     end
 
     if self.state == "game" then
@@ -751,8 +785,33 @@ function Game:update_road(dt)
             spawnNewCar(self, 86, p, i, -1)
             spawnNewCar(self, 138, p, i, 1)
             spawnNewCar(self, 166, p, i, 1)
+            spawnObstacle(self, 116, p, i, 1)
             -- self.last_obstacle = -1 * self.road_pos + self.next_obstacle
         end
+    end
+end
+
+function spawnObstacle(self, carril, p, i, direction) 
+    local posibleColition = findColition(self, carril, 432)
+    if (math.random() > 0.9 and frame % 15 == 0 and not posibleColition) then
+        table.insert(self.entities, Obstaculo:new{
+            pos = -1 * self.road_pos,
+            x = carril,
+            y = -80,
+            stage = self,
+            spr = 432,
+            w = 8,
+            h = 16,
+            sprW = 1,
+            sprH = 2,
+            ox = 0,
+            oy = 0,
+            name = "obstacle",
+            speedX = 0.05,
+            direction = direction,
+            type = "obstacle"
+        })
+        self.entity_count = self.entity_count + 1
     end
 end
 
@@ -1489,6 +1548,9 @@ end
 -- 173:bbbbcaaaabcdaa98ccaaa988ccaaa988aaaa9aaaa999bbba8bbbbbbabbbbbbba
 -- 174:a8bbbbbba8bbbbbb88888888888888889a9999999cbbbbbb9cbbbbbb9cbbbbbb
 -- 175:a9fd0000a9ed0000888d0000888d0000a98d0000c9ed0000c98d0000c9ed0000
+-- 176:0004400000055000004444000454454054455445454444540455554000444400
+-- 177:0bb00bb0bdddddddbdedeeeebdeeeeeeddeeeeeedeeeeeeeddedeeee0dddddee
+-- 178:0bb00bb0bddddddddeedeeedeeeeeeddeeeeeed0eeeeeddbeeeddddbeeddbbb0
 -- 180:0bdddddd0bdddddd0beddddd0bbbbedd0bddbbbb00eddddd000cdeee00000eee
 -- 181:ddddddb0ddddddb0dddddeb0ddebbbb0bbbbddb0ddddde00eeedc000eee00000
 -- 182:fdedddddfdedddddfdedddddfdedddddfdeeddddfdeeedddfdeeeeeeffffffff
@@ -1501,6 +1563,9 @@ end
 -- 189:adddddbaabbbbbbaabbbbbbaabbbbbbaabbbbbbaabbbbbbaabbbbbba9dddddd9
 -- 190:acbbbbbbacbbbbbbacbbbbbbacbbbbbcaddddddd8abbbbbb8abbbbbbe9aaaaaa
 -- 191:caee0000ca8e0000caee0000ca8e0000da8e0000baef0000ba800000a9000000
+-- 192:0bb00bb0bdddddddbdedeeedbdeeeeddddeeeed0deeeeddbddeddddb0dddbbb0
+-- 193:d0bbbdded7000bddd77000bbd0077700d0000777d0777700d7700000d0000000
+-- 194:ddbb000ddbb0007db000777d0777000d7770000d0077770d0000077d0000000d
 -- 204:04000000940000009fff00000fff900000009400000004000000000000000000
 -- 205:00fff00000fff000004440000a9a9a0004a9a400449a944040a9a04000000000
 -- 206:0400040040fff04040fff040404440400a9a9a0000a9a000009a900000a9a000
