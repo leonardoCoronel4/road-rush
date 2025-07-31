@@ -5,6 +5,9 @@
 -- script:  lua
 scroll_y = 0
 local frame = 0
+start_time = time()
+timer = 0
+gameStatus = "game"
 
 local saveData = {
     car = false
@@ -83,7 +86,7 @@ CarConfig = {
         ox = 0,
         oy = 0,
         speedX =0.14,
-        speedY = 2
+        speedY = 1
     }, -- Deportivo amarillo / Chances 2/79
     [258] = {
         sprW = 2,
@@ -93,7 +96,7 @@ CarConfig = {
         ox = 0,
         oy = 0,
         speedX =0.14,
-        speedY = 2
+        speedY = 1
     }, -- Deportivo Blanco / Chances 2/79
     [260] = {
         sprW = 2,
@@ -103,7 +106,7 @@ CarConfig = {
         ox = 0,
         oy = 0,
         speedX =0.12,
-        speedY = 1
+        speedY = 1.3
     }, -- Rapidin rojo / Chances 15/79
     [262] = {
         sprW = 2,
@@ -113,7 +116,7 @@ CarConfig = {
         ox = 0,
         oy = 0,
         speedX =0.12,
-        speedY = 1
+        speedY = 1.3
     }, -- Rapidin blanco / Chances 15/79
     [264] = {
         sprW = 2,
@@ -123,7 +126,7 @@ CarConfig = {
         ox = 0,
         oy = 0,
         speedX =0.07,
-        speedY = 0.6
+        speedY = 0.8
     }, -- Común rojo / Chances 12/79
     [266] = {
         sprW = 2,
@@ -133,7 +136,7 @@ CarConfig = {
         ox = 0,
         oy = 0,
         speedX =0.07,
-        speedY = 0.6
+        speedY = 0.8
     }, -- Común azul / Chances 12/79
     [268] = {
         sprW = 2,
@@ -173,7 +176,7 @@ CarConfig = {
         ox = 2,
         oy = 2,
         speedX = 0.06,
-        speedY = 1
+        speedY = 0.7
     }, -- La moto del enano de Ratatouille / Chances 4/79
     [324] = {
         sprW = 2,
@@ -183,7 +186,7 @@ CarConfig = {
         ox = 0,
         oy = 0,
         speedX = 0.04,
-        speedY = 0.3
+        speedY = 0.4
     }, -- Camión 1 / Chances 6/79
     [326] = {
         sprW = 2,
@@ -193,7 +196,7 @@ CarConfig = {
         ox = 0,
         oy = 0,
         speedX = 0.04,
-        speedY = 0.3
+        speedY = 0.4
     } -- Camión 2 / Chances 6/79
     -- [328] = {sprW = 8, sprH = 8, w = 64, h = 64, ow = 0, oh = 0}, -- Tanque / Chances 1/79
 }
@@ -227,7 +230,7 @@ Car = Entity:new{
     spr = 326,
     direction = -1,
     speedX = 0.5,
-    speedY = 0.5,
+    speedY = 1,
 }
 
 function Car:draw()
@@ -237,11 +240,9 @@ end
 
 function Car:update(dt, direction)
     if (direction == 1) then
-        self.y = self.y - (self.stage.road_vy * dt) / 3
-    else 
-        if (direction == -1) then
-        self.y = self.y - (self.stage.road_vy * dt) * 1.2
-        end
+        self.y = self.y - (self.stage.road_vy / 3) / (self.speedY * 2) * dt
+    elseif (direction == -1) then
+        self.y = self.y - (self.stage.road_vy * 1.2) * self.speedY * dt
     end
     self.pos = self.stage.road_pos
 end
@@ -286,7 +287,8 @@ Player = Entity:new{
     spr = 0,
     car = nil,
     landing = false,
-    direction = 1
+    direction = 1,
+    speedY = 1
 }
 
 function Player:draw()
@@ -323,7 +325,8 @@ CarPlayer = Entity:new{
     sprW = 2,
     sprH = 4,
     speedX = .14,
-    direction = 1
+    direction = 1,
+    speedY = 1
 }
 
 function CarPlayer:draw()
@@ -331,12 +334,12 @@ function CarPlayer:draw()
     --rectb(self.x + self.ox, self.y + self.oy, self.w, self.h, 15)
 end
 
-function CarPlayer:update(dt)
+function CarPlayer:update()
     if (self.type == "carPlayer") then
         if (self.y > 103) then
-            self.y = self.y - 1.5
+            self.y = self.y - 0.5
         elseif (self.y < 103) then
-            self.y = self.y + 1.5
+            self.y = self.y + 0.5
         end
         if (self.y > 102 and self.y < 104) then
             self.y = 103
@@ -542,7 +545,8 @@ Game = Stage:new{
     tanke = false,
     explosion = false,
     jumpAnimation = false,
-    timer_jump = 30
+    timer_jump = 30,
+    final_time = nil
 }
 
 function Game:init()
@@ -634,8 +638,10 @@ function Game:update(dt)
                     speedX = e.speedX,
                     direction = 1,
                     sprW = e.sprW,
-                    sprH = e.sprH
+                    sprH = e.sprH,
+                    speedY = e.speedY
                 }
+                self.player.speedY = e.speedY
                 self:add_entity(self.player.car)
                 e.alive = false
                 break
@@ -674,9 +680,18 @@ function Game:update(dt)
         vbank(0)
     end
 
+    if timer >= 120 then
+        self.state = "game over"
+    end
+
     if self.state == "game over" then
+        gameStatus = "game over"
         vbank(1)
-        print("GAME OVER", 64, 60, 3, false, 2)
+        if timer >= 120 then 
+            print("TIME OVER", 64, 60, 3, false, 2)
+        else
+            print("GAME OVER", 64, 60, 3, false, 2)
+        end
         if frame < 30 then
             rect(54, 78 + 25, 132, 8, 12)
             print("Press X or Z to continue", 55, 104, 15)
@@ -700,6 +715,8 @@ function Game:update(dt)
                 car = false
             end
             saveEntities_ = {}
+            start_time = time()
+            gameStatus = "game"
             sm.switch("menu")
         end
     end
@@ -726,6 +743,23 @@ function Game:update_entities(dt)
     local entity_count_ = 0
     for i = 1, #self.entities do
         local e = self.entities[i]
+        
+        if e.name == "car" then
+            for j = 1, #self.entities do
+                local other = self.entities[j]
+                if other ~= e and other.name == "car" then
+                    if overlap(e.y, e.y + e.h + 1, other.y, other.y + e.h) then 
+                        if e.y < other.y then
+                            e.speedY = math.max(e.speedY, other.speedY)
+                            other.speedY = math.max(e.speedY, other.speedY)
+                        else
+                            e.speedY = math.min(e.speedY, other.speedY)
+                            other.speedY = math.min(e.speedY, other.speedY)
+                        end
+                    end
+                end
+            end
+        end
         e:update(dt, e.direction)
         if e.alive and e.y < 150 then
             table.insert(entities_, e)
@@ -755,6 +789,14 @@ function Game:draw_road()
     print(string.format("%06.f m", self.distance), 8, 26, 4, true)
     print("high", 8, 2, 6)
     print(string.format("%06.f m", settings.high_score), 8, 10, 4, true)
+    print("Speed", 208, 18, 6)
+
+    if self.player.car then
+        print(CarConfig[self.player.car.spr].speedY, 208, 26, 4, true)
+    end
+
+    print("Time", 208, 2, 6)
+    print(timer.."s", 208, 10, 4, true)
 
     if key(50) and self.state == "game" then
         self:pauseGame()
@@ -767,12 +809,12 @@ function Game:update_road(dt)
     end
 
     if self.state ~= "game over" then
-        self.road_pos = self.road_pos + self.road_vy * dt
+        self.road_pos = (self.road_pos + self.road_vy * dt)
     end
 
     if self.state == "game" then
 
-        self.distance = -0.1406 * self.road_pos
+        self.distance = self.distance + self.player.speedY * dt * 0.01
 
         if self.distance > settings.high_score then
             settings.high_score = self.distance
@@ -781,11 +823,11 @@ function Game:update_road(dt)
         if -self.road_pos > self.last_obstacle then
             local p = {42, 64, 86}
             local i = math.random(1, #p)
-            spawnNewCar(self, 59, p, i, -1)
-            spawnNewCar(self, 86, p, i, -1)
-            spawnNewCar(self, 138, p, i, 1)
-            spawnNewCar(self, 166, p, i, 1)
-            spawnObstacle(self, 116, p, i, 1)
+            if math.random() < 0.5 then spawnNewCar(self, 59, p, i, -1) end
+            if math.random() < 0.5 then spawnNewCar(self, 86, p, i, -1) end
+            if math.random() < 0.5 then spawnNewCar(self, 138, p, i, 1) end
+            if math.random() < 0.5 then spawnNewCar(self, 166, p, i, 1) end
+            if math.random() < 0.5 then spawnObstacle(self, 116, p, i, 1) end
             -- self.last_obstacle = -1 * self.road_pos + self.next_obstacle
         end
     end
@@ -838,7 +880,7 @@ function spawnNewCar(self, carril, p, i, carDirection)
             oy = spriteConfig.oy,
             name = "car",
             speedX = spriteConfig.speedX,
-            --speedY = spriteConfig.speedY,
+            speedY = spriteConfig.speedY,
             direction = carDirection
         })
         self.entity_count = self.entity_count + 1
@@ -984,6 +1026,11 @@ function TIC()
     local dt = actual_t - last_t
 
     scroll_y = scroll_y + 0.6
+
+    if gameStatus == "game" then
+        timer = math.floor((time() - start_time) / 1000) 
+    end
+
     if dt < 500 then
         sm.update(dt)
     end
